@@ -276,11 +276,12 @@ class AudioEngine {
     this.noise(0.5, { type: 'bandpass', freq: 3000, vol: 0.05 });
   }
 
+  /** Som curto de água a cada braçada (começa no mesmo instante do toque). */
   stroke(power: number) {
     if (!this.ready) return;
     const p = Math.min(1.3, Math.max(0.2, power));
-    this.noise(0.18 + p * 0.22, { type: 'lowpass', freq: 3500, sweep: 400, vol: 0.12 + p * 0.14, attack: 0.008 });
-    this.noise(0.12, { type: 'bandpass', freq: 900 + Math.random() * 400, vol: 0.06 * p, q: 2 });
+    this.noise(0.12 + p * 0.08, { type: 'lowpass', freq: 3800, sweep: 500, vol: 0.12 + p * 0.1, attack: 0.003 });
+    this.noise(0.07, { type: 'bandpass', freq: 900 + Math.random() * 500, vol: 0.05 * p, q: 2, attack: 0.002 });
   }
 
   splash() {
@@ -289,25 +290,13 @@ class AudioEngine {
     this.tone(180, 0.3, { type: 'sine', vol: 0.2, slide: 60 });
   }
 
+  /** Som curtinho por toque (com 2–3 toques/s precisa ser leve). */
   quality(q: string, combo: number) {
     if (!this.ready) return;
-    const t = this.ctx!.currentTime;
     if (q === 'perfect') {
-      [0, 4, 7, 12].forEach((s, i) =>
-        this.tone(mtof(79 + s), 0.18, { type: 'triangle', vol: 0.13, when: t + i * 0.045 }),
-      );
-      this.tone(mtof(103), 0.3, { type: 'sine', vol: 0.05, when: t + 0.18 });
-    } else if (q === 'great') {
-      [0, 7].forEach((s, i) => this.tone(mtof(76 + s), 0.15, { type: 'triangle', vol: 0.11, when: t + i * 0.05 }));
-    } else if (q === 'good') {
-      this.tone(mtof(72), 0.12, { type: 'triangle', vol: 0.08 });
-    } else if (q === 'early' || q === 'passed') {
-      this.tone(mtof(55), 0.22, { type: 'sawtooth', vol: 0.07, slide: mtof(50), filter: 900 });
-    }
-    if (combo >= 2 && (q === 'perfect' || q === 'great')) {
-      const base = 72 + combo * 2;
-      this.tone(mtof(base), 0.1, { type: 'square', vol: 0.05, when: t + 0.2, filter: 3000 });
-      this.tone(mtof(base + 5), 0.16, { type: 'square', vol: 0.05, when: t + 0.27, filter: 3000 });
+      this.tone(mtof(79 + Math.min(5, combo) * 2), 0.09, { type: 'triangle', vol: 0.07 });
+    } else if (q === 'slow' || q === 'rushed') {
+      this.tone(mtof(57), 0.1, { type: 'triangle', vol: 0.05, slide: mtof(52) });
     }
   }
 

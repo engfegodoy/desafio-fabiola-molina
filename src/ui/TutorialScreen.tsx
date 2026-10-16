@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ENERGY } from '../config/balance';
-import { TUTORIAL_STEPS, TUTORIAL_TOTAL_BREATHS, TUTORIAL_TOTAL_STROKES, type RaceEngine } from '../game/raceEngine';
+import { TUTORIAL_STEPS, type RaceEngine } from '../game/raceEngine';
 import { useEngineEvent, useTicker } from '../game/engineContext';
 import { bindingLabel } from '../game/keybindings';
 import { isTouch, useGame } from '../store/gameStore';
@@ -15,9 +15,9 @@ import { DrownOverlay } from './DrownOverlay';
 function useHowTo() {
   const scheme = useGame((s) => s.mobileScheme);
   const bindings = useGame((s) => s.bindings);
-  if (!isTouch) return { swim: `segure ${bindingLabel(bindings.swim)}`, breathe: `aperte ${bindingLabel(bindings.breathe)}` };
-  if (scheme === 'buttons') return { swim: 'segure NADAR', breathe: 'toque RESPIRAR' };
-  return { swim: 'segure a tela', breathe: 'arraste para cima' };
+  if (!isTouch) return { swim: `aperte ${bindingLabel(bindings.swim)}`, breathe: `aperte ${bindingLabel(bindings.breathe)}` };
+  if (scheme === 'buttons') return { swim: 'toque NADAR', breathe: 'toque RESPIRAR' };
+  return { swim: 'toque na tela', breathe: 'arraste para cima' };
 }
 
 export function TutorialScreen({ engine }: { engine: RaceEngine }) {
@@ -46,9 +46,9 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
 
   // Etapas curtas: 10 braçadas → respirar → mais 10 braçadas.
   const STEPS = [
-    { icon: '🏊', title: 'NADE', text: `${how.swim} e solte no VERDE` },
+    { icon: '🏊', title: 'TOQUE PARA DAR UMA BRAÇADA', text: `${how.swim}: cada toque = 1 braçada` },
     { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+${ENERGY.breathGain} de fôlego)` },
-    { icon: '🔥', title: 'MANTENHA O RITMO', text: `acerte o verde e respire a cada ${ENERGY.breathGain}` },
+    { icon: '🔥', title: 'MANTENHA O RITMO = COMBO', text: 'toque 2–3x por segundo: 4 PERFEITAS seguidas' },
   ];
 
   const step = Math.min(engine.tutorialStep, STEPS.length - 1);
@@ -73,7 +73,7 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
                 <div className="truncate text-xs font-bold text-navy-700">{info.text}</div>
               </div>
               <div className="font-display shrink-0 rounded-xl bg-sky-100 px-2 py-1 text-center text-sm text-navy-800">
-                {isBreath ? '🫁' : '🏊'} {engine.tutorialCount}/{cfg.need}
+                {isBreath ? '🫁' : cfg.key === 'combo' ? '🔥' : '🏊'} {engine.tutorialCount}/{cfg.need}
               </div>
             </div>
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-sky-100">
@@ -101,7 +101,7 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
             <div className="font-display text-stroke text-6xl text-sun-400 sm:text-8xl">PARABÉNS!</div>
             <div className="font-display text-stroke mt-2 text-2xl text-white sm:text-4xl">VOCÊ ESTÁ PRONTO PARA DESAFIAR A FABIOLA!</div>
             <div className="font-display mt-4 inline-block rounded-2xl bg-navy-800/80 px-4 py-2 text-lg">
-              {TUTORIAL_TOTAL_STROKES} braçadas • {TUTORIAL_TOTAL_BREATHS} respiração ✔
+              Toque, respiração e ritmo dominados ✔
             </div>
           </div>
         </div>

@@ -49,8 +49,8 @@ function makeDrive(engine: RaceEngine, who: 'player' | 'opponent') {
     pose.strokeCount = sw.strokeCount;
     pose.strokePower = sw.lastStrokePower;
     pose.speed = sw.speed;
-    pose.charging = sw.charging;
-    pose.charge = sw.charge;
+    pose.charging = false;
+    pose.charge = 0;
     pose.breathing = sw.breathTimer > 0 ? Math.max(0.001, 1 - sw.breathTimer / ENERGY.breathTime) : 0;
 
     const swim = () => {
@@ -497,7 +497,7 @@ export function RaceWorld({ engine }: { engine: RaceEngine }) {
         if (e.type === 'stroke') {
           const sw = e.who === 'player' ? engine.player : engine.opponent!.swimmer;
           const side = sw.strokeCount % 2 ? 1 : -1;
-          const power = e.result.long ? Math.min(1.3, e.result.efficiency) : 0.35;
+          const power = Math.min(1.3, e.result.efficiency);
           splashBus.burst(e.x + side * 0.32, 0.05, e.z - 0.9, power);
           splashBus.ripple(e.x + side * 0.3, 0, e.z - 0.9, 0.3 + power * 0.3);
         }

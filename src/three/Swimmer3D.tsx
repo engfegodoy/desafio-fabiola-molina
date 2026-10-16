@@ -203,14 +203,17 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
       case 'swim': {
         if (pose.strokeCount !== a.lastStroke) {
           if (a.lastStroke >= 0) {
-            a.target += Math.PI;
+            // Resposta imediata: termina a braçada anterior e o braço já entra na água neste quadro.
+            a.phase = Math.max(a.phase, a.target);
+            a.target = a.phase + Math.PI;
+            a.phase += Math.PI * 0.32;
           } else {
             a.target = Math.ceil(a.phase / Math.PI) * Math.PI;
           }
           a.lastStroke = pose.strokeCount;
         }
         // braçada rápida se forte, plus deslize lento
-        const k = 7 + pose.strokePower * 6;
+        const k = 14 + pose.strokePower * 6;
         a.phase += (a.target - a.phase) * Math.min(1, dt * k) + dt * 0.25 * Math.min(1, pose.speed);
         if (a.phase > a.target) a.target = a.phase;
         const ph = a.phase;

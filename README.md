@@ -20,25 +20,25 @@ Depois abra `http://localhost:5173`. No Replit, o botão **Run** já executa `np
 
 ## Fluxo
 
-Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dicas → Controles → Treino obrigatório (20 braçadas + 1 respiração, com "Pular tutorial") → 4 fases → Prêmio.
+Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dicas → Controles → Treino (tocar para nadar, respirar, manter o ritmo; com "Pular tutorial") → 4 fases → Prêmio.
 
 ## Controles
 
-- **Computador:** **ESPAÇO** = NADAR (segure e solte na zona verde), **CTRL** ou **↑** = RESPIRAR. **P** ou **Esc** pausa. As teclas podem ser trocadas na tela de controles ou na pausa (⚙ Controles); NADAR e RESPIRAR não podem usar a mesma tecla.
+- **Computador:** **ESPAÇO** = NADAR (cada aperto é uma braçada na hora, ritmo ideal de 2–3 por segundo), **CTRL** ou **↑** = RESPIRAR. **P** ou **Esc** pausa. As teclas podem ser trocadas na tela de controles ou na pausa (⚙ Controles); NADAR e RESPIRAR não podem usar a mesma tecla.
 - **Celular/tablet:** dois modos, escolhidos antes do treino:
-  - **Botões separados:** NADAR à direita (segure e solte), RESPIRAR à esquerda.
-  - **Toque e gesto:** segure e solte em qualquer lugar = braçada; arraste para cima (mínimo 60 px) = respirar.
+  - **Botões separados:** TOQUE PARA NADAR à direita, RESPIRAR à esquerda.
+  - **Toque e gesto:** cada toque em qualquer lugar = braçada; arraste para cima (mínimo 60 px) = respirar.
 
 ## Fôlego e respiração
 
 - O fôlego tem **20 partes** e não volta sozinho. Cada braçada gasta 1 (amarelo 1,5; vermelho 2).
-- **RESPIRAR** devolve 7. Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
+- **RESPIRAR** devolve 10 (respire a cada ~10 braçadas). Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
 - Com **10/20** a barra pisca, as bordas da tela escurecem e o coração acelera. Com **7/20 ou menos** a nadadora fica lenta aos poucos.
 - Se o fôlego **zerar**: "Oh não! Você se afogou!" e o jogo recomeça do zero (no treino, recomeça o treino).
-- **Combo x5:** a cada 5 braçadas seguidas no verde, as 3 próximas deslizam mais longe.
-- No **computador** a zona verde é maior e mais perto do começo da barra.
+- **Deslize:** a cada 5 braçadas perfeitas seguidas, as 3 próximas deslizam mais longe.
+- **Ritmo (estilo Flappy Bird):** cada toque dá um impulso na hora e a água freia rápido entre os toques. A barra de ritmo (vermelho → verde) mostra a velocidade. Toques no ritmo certo = PERFEITO (+1 combo); devagar ou rápido demais = −1 combo. Cada braçada rende cerca de 1 m.
 - A Fabiola respira (com uma pequena pausa) e o tubarão para para respirar a cada 6 s.
-- Todos os números ficam em `ENERGY`, `GLIDE`, `DESKTOP_BAR` e `ZONES` em `src/config/balance.ts`.
+- Todos os números ficam em `SWIM`, `QUALITY`, `ENERGY`, `GLIDE` e no `rhythm` de cada fase em `src/config/balance.ts`.
 
 ## Estrutura
 

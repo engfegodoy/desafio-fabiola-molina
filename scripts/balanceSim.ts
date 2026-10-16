@@ -9,31 +9,25 @@ import type { StageKind } from '../src/config/balance.ts';
 
 interface Bot {
   name: string;
-  /** Desvio-padrão (s) do erro humano ao soltar. */
-  sigma: number;
-  /** Pausa média (s) entre braçadas. */
-  pause: number;
+  /** Intervalo médio (s) entre toques e a variação humana (desvio). */
+  interval: number;
+  jitter: number;
   /** Respira quando a energia chega a este valor (ou abaixo). -1 = nunca. */
   breatheAt: number;
   /** Respira a cada N braçadas, independentemente da energia (0 = desliga). */
   breathEvery?: number;
-  /** Só toques rápidos. */
-  spam?: boolean;
-  /** Joga no computador (barra mais generosa). */
-  desktop?: boolean;
 }
 
 const BOTS: Bot[] = [
-  { name: 'craque', sigma: 0.03, pause: 0.1, breatheAt: 13 },
-  { name: 'bom', sigma: 0.05, pause: 0.13, breatheAt: 13 },
-  { name: 'bom (computador)', sigma: 0.05, pause: 0.13, breatheAt: 13, desktop: true },
-  { name: 'erra-e-ajusta', sigma: 0.065, pause: 0.15, breatheAt: 13 },
-  { name: 'médio', sigma: 0.08, pause: 0.18, breatheAt: 10 },
-  { name: 'iniciante', sigma: 0.12, pause: 0.24, breatheAt: 7 },
-  { name: 'sem-respirar', sigma: 0.03, pause: 0.1, breatheAt: -1 },
-  { name: 'respira-demais', sigma: 0.03, pause: 0.1, breatheAt: -1, breathEvery: 2 },
-  { name: 'respira-tarde', sigma: 0.03, pause: 0.1, breatheAt: 3 },
-  { name: 'só-toques', sigma: 0, pause: 0.12, breatheAt: 13, spam: true },
+  { name: 'craque', interval: 0.37, jitter: 0.025, breatheAt: 10 },
+  { name: 'bom', interval: 0.4, jitter: 0.05, breatheAt: 10 },
+  { name: 'erra-e-ajusta', interval: 0.42, jitter: 0.08, breatheAt: 10 },
+  { name: 'médio', interval: 0.5, jitter: 0.12, breatheAt: 7 },
+  { name: 'iniciante', interval: 0.65, jitter: 0.2, breatheAt: 4 },
+  { name: 'rápido (3,5/s)', interval: 0.28, jitter: 0.03, breatheAt: 10 },
+  { name: 'amassador', interval: 0.12, jitter: 0.02, breatheAt: 10 },
+  { name: 'sem-respirar', interval: 0.37, jitter: 0.025, breatheAt: -1 },
+  { name: 'respira-demais', interval: 0.37, jitter: 0.025, breatheAt: -1, breathEvery: 2 },
 ];
 
 function gauss() {
@@ -45,39 +39,26 @@ function gauss() {
 }
 
 function runOnce(kind: StageKind, bot: Bot) {
-  const eng = new RaceEngine(kind, undefined, { desktop: bot.desktop });
+  const eng = new RaceEngine(kind);
   const dt = 1 / 60;
-  let mode: 'wait' | 'hold' = 'wait';
-  let timer = 0;
-  let releaseAt = 0;
+  let timer = 0.15;
   let sinceBreath = 0;
   let guard = 0;
   while (eng.state !== 'done' && eng.state !== 'drowned' && guard++ < 60 * 400) {
     if (eng.controllable) {
       const p = eng.player;
-      const bar = eng.playerBar;
-      if (mode === 'wait') {
-        timer -= dt;
-        if (timer <= 0 && !p.breathing) {
-          const wantBreath =
-            (bot.breatheAt >= 0 && p.energy <= bot.breatheAt) || (bot.breathEvery && sinceBreath >= bot.breathEvery);
-          if (wantBreath && p.strokesSinceBreath >= 1) {
-            eng.breathe();
-            sinceBreath = 0;
-            timer = 0.08;
-          } else {
-            eng.press();
-            mode = 'hold';
-            const center = ((bar.greenStart + bar.greenEnd) / 2) * bar.chargeTime;
-            releaseAt = bot.spam ? 0.08 : Math.max(0.17, center + gauss() * bot.sigma);
-          }
-        }
-      } else if (mode === 'hold') {
-        if (p.charging && p.chargeTime >= releaseAt) {
-          eng.release();
+      timer -= dt;
+      if (timer <= 0 && !p.breathing) {
+        const wantBreath =
+          (bot.breatheAt >= 0 && p.energy <= bot.breatheAt) || (bot.breathEvery && sinceBreath >= bot.breathEvery);
+        if (wantBreath && p.strokesSinceBreath >= 1) {
+          eng.breathe();
+          sinceBreath = 0;
+          timer = 0.1;
+        } else {
+          eng.stroke();
           sinceBreath++;
-          mode = 'wait';
-          timer = bot.pause * (0.7 + Math.random() * 0.6);
+          timer = Math.max(0.08, bot.interval + gauss() * bot.jitter);
         }
       }
     }

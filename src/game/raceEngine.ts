@@ -1,4 +1,4 @@
-import { DESKTOP_BAR, ENERGY, LANES, STAGES, SWIM, TIMING, type PhaseId, type PowerBarConfig, type StageConfig, type StageKind } from '../config/balance.ts';
+import { ENERGY, LANES, STAGES, SWIM, TIMING, type PhaseId, type RhythmConfig, type StageConfig, type StageKind } from '../config/balance.ts';
 import { OpponentAI, Shark } from './opponent.ts';
 import { Swimmer, type BreathResult, type StrokeResult } from './swimmer.ts';
 import { mulberry32, WaveField, type WaveWarning } from './waves.ts';
@@ -47,31 +47,17 @@ export type EngineEvent =
 
 type Listener = (e: EngineEvent) => void;
 
-/** Treino obrigatório: 20 braçadas e pelo menos 1 respiração. */
+/** Treino: tocar para nadar, respirar e manter o ritmo (4 perfeitas seguidas). */
 export const TUTORIAL_STEPS = [
   { key: 'swim', need: 10 },
   { key: 'breath', need: 1 },
-  { key: 'swim', need: 10 },
+  { key: 'combo', need: 4 },
 ] as const;
-export const TUTORIAL_TOTAL_STROKES = 20;
+export const TUTORIAL_TOTAL_STROKES = 10;
 export const TUTORIAL_TOTAL_BREATHS = 1;
 
-/** No computador a zona verde fica maior e mais perto do começo da barra. */
-export function desktopBar(b: PowerBarConfig): PowerBarConfig {
-  const k = DESKTOP_BAR.shift;
-  const greenStart = b.greenStart * k;
-  const greenEnd = greenStart + (b.greenEnd - b.greenStart) * DESKTOP_BAR.widen;
-  return {
-    chargeTime: b.chargeTime,
-    yellowStart: b.yellowStart * k,
-    greenStart,
-    greenEnd,
-    yellowEnd: Math.min(0.97, greenEnd + (b.yellowEnd - b.greenEnd)),
-  };
-}
-
 export interface EngineOptions {
-  /** Jogando no computador (teclado): barra de força mais generosa. */
+  /** Jogando no computador (teclado). Reservado para ajustes por aparelho. */
   desktop?: boolean;
 }
 
@@ -110,8 +96,8 @@ export class RaceEngine {
   /** Totais do treino (braçadas e respirações válidas). */
   tutorialStrokes = 0;
   tutorialBreaths = 0;
-  /** Barra de força do jogador (no computador é mais generosa). */
-  playerBar: PowerBarConfig;
+  /** Ritmo da fase (janela do PERFEITO etc.). */
+  rhythm: RhythmConfig;
   /** Último nível de energia avisado (para não repetir alertas). */
   private energyLevel: 'ok' | 'low' | 'critical' = 'ok';
 
@@ -119,15 +105,15 @@ export class RaceEngine {
     this.kind = kind;
     this.cfg = STAGES[kind];
     this.rng = mulberry32(seed);
-    this.playerBar = opts.desktop ? desktopBar(this.cfg.bar) : this.cfg.bar;
-    // A Fabiola usa sempre a barra original: o desempenho dela não muda.
-    this.player = new Swimmer(this.playerBar, this.cfg.playerPower);
+    void opts;
+    this.rhythm = this.cfg.rhythm;
+    this.player = new Swimmer(this.rhythm, this.cfg.playerPower);
     this.waves = new WaveField(this.cfg.waves, seed ^ 0x9e3779b9);
     const lanes = kind === 'pool' ? LANES.pool : kind === 'seaDay' || kind === 'seaNight' ? LANES.sea : LANES.solo;
     this.playerX = lanes.player;
     this.opponentX = lanes.opponent;
     if (this.cfg.opponent) {
-      const s = new Swimmer(this.cfg.bar, this.cfg.opponent.power);
+      const s = new Swimmer(this.rhythm, this.cfg.opponent.power);
       this.opponent = new OpponentAI(s, this.cfg.opponent, mulberry32(seed + 77));
     }
     if (this.cfg.shark) this.shark = new Shark(this.cfg.shark);
@@ -173,63 +159,34 @@ export class RaceEngine {
     if (this.state === 'intro') this.stateTime = this.introDuration;
   }
 
-  private pressWall: number | null = null;
-
-  /** wallMs: horário real do toque (performance.now) para medir a força com precisão. */
-  press(wallMs?: number) {
+  /** TOQUE = BRAÇADA NA HORA: impulso, animação, respingo e som no mesmo quadro. */
+  stroke() {
     if (!this.controllable) return;
-    const started = this.player.press();
-    // Se ficou aguardando o fim da respiração, mede pelos quadros.
-    if (started) this.pressWall = wallMs ?? null;
-    else if (this.player.pendingPress) this.pressWall = null;
+    const env = this.waves.envAt(-this.player.distance);
+    const r = this.player.stroke(env);
+    if (!r) return;
+    this.emit({ type: 'stroke', who: 'player', result: r, x: this.playerX, z: -this.player.distance });
+    if (r.comboBroken) this.emit({ type: 'comboLost' });
+    // Sem fôlego: afogou (tem prioridade sobre qualquer conquista do treino).
+    if (this.player.energy <= ENERGY.drownAt + 1e-6) {
+      this.drown();
+      return;
+    }
+    if (this.kind === 'tutorial') this.tutorialOnStroke(r);
+    this.checkEnergyAlerts();
   }
 
-  /** Cancela a braçada em carregamento (gesto de respirar no celular). */
-  cancelCharge() {
-    this.player.cancelCharge();
-    this.pressWall = null;
-  }
-
-  /** RESPIRAR: recupera 50% de energia sem parar a nadadora. */
+  /** RESPIRAR: recupera fôlego sem parar a nadadora. */
   breathe() {
     if (!this.controllable) return;
-    this.pressWall = null;
     const r = this.player.breathe();
     this.emit({ type: 'breath', who: 'player', result: r });
     if (r.valid) this.energyLevel = 'ok';
     if (this.kind === 'tutorial') this.tutorialOnBreath(r);
   }
 
-  release(wallMs?: number) {
-    if (!this.player.charging) {
-      this.player.pendingPress = false;
-      return;
-    }
-    if (!this.controllable) {
-      this.player.charging = false;
-      return;
-    }
-    const env = this.waves.envAt(-this.player.distance);
-    const hold = wallMs !== undefined && this.pressWall !== null ? (wallMs - this.pressWall) / 1000 : undefined;
-    this.pressWall = null;
-    const r = this.player.release(env, hold);
-    if (r) {
-      this.emit({ type: 'stroke', who: 'player', result: r, x: this.playerX, z: -this.player.distance });
-      if (r.comboBroken) this.emit({ type: 'comboLost' });
-      // Sem fôlego: afogou (tem prioridade sobre qualquer conquista do treino).
-      if (this.player.energy <= ENERGY.drownAt + 1e-6) {
-        this.drown();
-        return;
-      }
-      if (this.kind === 'tutorial') this.tutorialOnStroke(r);
-      this.checkEnergyAlerts();
-    }
-  }
-
   /** Ficou sem fôlego: "Oh não! Você se afogou!" — a partida recomeça do zero. */
   private drown() {
-    this.player.cancelCharge();
-    this.player.thrustAccel = 0;
     this.setState('drowned');
     this.emit({ type: 'drowned' });
   }
@@ -437,18 +394,15 @@ export class RaceEngine {
 
   private finishRace() {
     const p = this.player;
-    p.charging = false;
     const st = p.stats;
     const won = this.outcome === 'win' || this.outcome === 'escaped';
-    const longStrokes = st.strokes - st.short;
     const avgSpeed = st.raceTime > 0 ? st.speedSum / st.raceTime : 0;
     const breakdown: ScoreBreakdown = {
       velocidade: Math.round(Math.min(1, avgSpeed / 2.4) * 400),
       // Resistência: tempo com fôlego (energia acima de 10/20).
       resistencia: Math.round((1 - Math.min(1, st.lowEnergyTime / Math.max(1, st.raceTime))) * 300),
-      tecnica: Math.round(
-        longStrokes > 0 ? Math.min(1, (st.perfect + st.great * 0.7 + st.good * 0.3) / longStrokes) * 400 : 0,
-      ),
+      // Técnica: quanto do tempo você manteve o ritmo perfeito.
+      tecnica: Math.round(st.strokes > 0 ? Math.min(1, (st.perfect + st.good * 0.5) / st.strokes) * 400 : 0),
       conquista: (won ? 300 : 80) + Math.min(SWIM.comboMax, p.maxCombo) * 20,
     };
     const score = breakdown.velocidade + breakdown.resistencia + breakdown.tecnica + breakdown.conquista;
@@ -470,12 +424,14 @@ export class RaceEngine {
   }
 
   // ---------------- Tutorial ----------------
-  private tutorialOnStroke(_r: StrokeResult) {
+  private tutorialOnStroke(r: StrokeResult) {
     if (this.tutorialDone) return;
     this.tutorialStrokes++;
     const step = TUTORIAL_STEPS[this.tutorialStep];
-    if (step.key !== 'swim') return;
-    this.tutorialCount++;
+    if (step.key === 'swim') this.tutorialCount++;
+    // Ritmo: conta braçadas PERFEITAS seguidas nesta etapa (errou o ritmo, recomeça).
+    else if (step.key === 'combo') this.tutorialCount = r.quality === 'perfect' ? this.tutorialCount + 1 : 0;
+    else return;
     if (this.tutorialCount >= step.need) this.advanceTutorial();
   }
 

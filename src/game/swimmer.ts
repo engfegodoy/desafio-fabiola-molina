@@ -1,25 +1,24 @@
-import { ENERGY, GLIDE, QUALITY, SWIM, ZONES, type PowerBarConfig } from '../config/balance.ts';
+import { ENERGY, GLIDE, QUALITY, SWIM, type RhythmConfig } from '../config/balance.ts';
 
-export type StrokeQuality = 'short' | 'perfect' | 'great' | 'good' | 'early' | 'passed';
-export type StrokeZone = 'green' | 'yellow' | 'red' | 'tap';
+/** Qualidade de uma braçada, pelo ritmo (intervalo desde o toque anterior). */
+export type StrokeQuality = 'perfect' | 'good' | 'slow' | 'rushed';
 
 export interface StrokeResult {
   quality: StrokeQuality;
-  zone: StrokeZone;
-  /** Eficiência final aplicada (0..~1.4). */
+  /** Intervalo (s) desde a braçada anterior. */
+  interval: number;
+  /** Eficiência final aplicada (0..~1.3). */
   efficiency: number;
   impulse: number;
   combo: number;
   comboBroken: boolean;
   comboUp: boolean;
-  /** Braçada atropelada (ritmo ruim): "PERDEU O RITMO!". */
+  /** Rápido demais (amassando o botão). */
   rushed: boolean;
-  /** Esta braçada desliza mais (bônus do combo x5). */
+  /** Esta braçada desliza mais (bônus de 5 perfeitas seguidas). */
   glide: boolean;
   /** Acabou de ganhar o bônus de deslize. */
   glideEarned: boolean;
-  charge: number;
-  long: boolean;
   energyCost: number;
 }
 
@@ -45,7 +44,7 @@ export interface SwimEnv {
 
 export const CALM_ENV: SwimEnv = { dragMul: 1, push: 0, strokeMul: 1 };
 
-/** Rendimento (0..1) para um nível de energia: 100% acima de 50, caindo aos poucos abaixo. */
+/** Rendimento (0..1) para um nível de energia: 100% até o limite, caindo aos poucos abaixo. */
 export function energyFactor(energy: number): number {
   if (energy >= ENERGY.fullAbove) return 1;
   const k = Math.max(0, energy) / ENERGY.fullAbove;
@@ -53,31 +52,33 @@ export function energyFactor(energy: number): number {
 }
 
 /**
- * Modelo físico de um nadador. Puro (sem DOM / Three.js), usado pelo
- * jogador, pela Fabiola e pelo simulador de balanceamento.
+ * Modelo físico de um nadador (estilo Flappy Bird): cada toque é uma braçada
+ * imediata, com impulso instantâneo; entre os toques a água freia rápido.
+ * Puro (sem DOM / Three.js), usado pelo jogador, pela Fabiola e pelo simulador.
  */
 export class Swimmer {
   distance = 0;
   speed = 0;
+  /** Velocidade suavizada (para a barra de ritmo do HUD). */
+  smoothSpeed = 0;
+  /** Toques por segundo, suavizado. */
+  tapRate = 0;
   combo = 0;
   maxCombo = 0;
-  charging = false;
-  chargeTime = 0;
   /** Tempo desde a última braçada. */
   sinceStroke = 99;
   /** Tempo desde o último acerto (para o timeout do combo). */
   sinceHit = 99;
-  thrustAccel = 0;
-  thrustLeft = 0;
   finished = false;
   finishTime = 0;
   /** Contador de braçadas — usado pela animação dos braços. */
   strokeCount = 0;
   lastStrokePower = 0;
+  lastQuality: StrokeQuality | null = null;
   power = 1;
-  bar: PowerBarConfig;
+  rhythm: RhythmConfig;
 
-  /** Energia 0..100 — só a respiração recupera. */
+  /** Energia 0..max — só a respiração recupera. */
   energy = ENERGY.max;
   /** Rendimento "sentido" pelo corpo: segue a energia suavemente. */
   vigor = 1;
@@ -86,24 +87,17 @@ export class Swimmer {
   breathCount = 0;
   /** Braçadas desde a última respiração (precisa ser >= 1 para respirar de novo). */
   strokesSinceBreath = 1;
-  /** Apertou NADAR durante a respiração: começa a carregar quando ela terminar. */
-  pendingPress = false;
-  /** Braçadas seguidas no verde e bônus de deslize restante. */
-  greenStreak = 0;
+  /** Braçadas perfeitas seguidas e bônus de deslize restante. */
+  perfectStreak = 0;
   glideLeft = 0;
   gliding = false;
-  /** Freio temporário (zona vermelha). */
-  private brakeMul = 1;
-  private brakeLeft = 0;
+  private hasStroked = false;
 
   stats = {
     strokes: 0,
     perfect: 0,
-    great: 0,
     good: 0,
-    early: 0,
-    passed: 0,
-    short: 0,
+    slow: 0,
     rushed: 0,
     breaths: 0,
     ignoredBreaths: 0,
@@ -112,14 +106,9 @@ export class Swimmer {
     speedSum: 0,
   };
 
-  constructor(bar: PowerBarConfig, power = 1) {
-    this.bar = bar;
+  constructor(rhythm: RhythmConfig, power = 1) {
+    this.rhythm = rhythm;
     this.power = power;
-  }
-
-  /** Carga atual da barra (0..1). */
-  get charge(): number {
-    return this.charging ? Math.min(1, this.chargeTime / this.bar.chargeTime) : 0;
   }
 
   get comboMultiplier(): number {
@@ -131,151 +120,85 @@ export class Swimmer {
     return this.breathTimer > 0;
   }
 
-  /** Começa a carregar a braçada. Retorna false se ficou aguardando a respiração terminar. */
-  press(): boolean {
-    if (this.finished || this.charging) return false;
-    if (this.breathing) {
-      this.pendingPress = true;
-      return false;
-    }
-    this.charging = true;
-    this.chargeTime = 0;
-    return true;
+  /** Classifica o ritmo pelo intervalo entre dois toques. */
+  classify(interval: number): StrokeQuality {
+    const r = this.rhythm;
+    if (interval < r.rushBelow) return 'rushed';
+    if (interval >= r.perfectMin && interval <= r.perfectMax) return 'perfect';
+    if (interval > r.slowAbove) return 'slow';
+    return 'good';
   }
 
-  /** Cancela a braçada em carregamento (ex.: gesto de respirar). */
-  cancelCharge() {
-    this.charging = false;
-    this.pendingPress = false;
-    this.chargeTime = 0;
-  }
+  /**
+   * TOQUE = BRAÇADA NA HORA. Impulso instantâneo (sem segurar e soltar).
+   * Retorna null se não pode nadar agora (ex.: no meio da respiração).
+   */
+  stroke(env: SwimEnv = CALM_ENV): StrokeResult | null {
+    if (this.finished || this.breathing) return null;
+    const interval = this.hasStroked ? this.sinceStroke : (this.rhythm.perfectMin + this.rhythm.perfectMax) / 2;
+    // A primeira braçada (e a primeira depois de respirar) não é julgada como "devagar".
+    const judged = this.hasStroked && this.strokesSinceBreath > 0 ? this.classify(interval) : 'good';
+    const quality: StrokeQuality = judged === 'slow' && this.strokesSinceBreath === 0 ? 'good' : judged;
+    this.hasStroked = true;
 
-  private brake(mul: number, time: number) {
-    this.brakeMul = Math.max(this.brakeMul, mul);
-    this.brakeLeft = Math.max(this.brakeLeft, time);
-  }
-
-  /** Classifica a carga no momento de soltar. */
-  classify(charge: number): { quality: StrokeQuality; zone: StrokeZone; eff: number } {
-    const b = this.bar;
-    if (charge < b.yellowStart) {
-      const k = charge / b.yellowStart;
-      return { quality: 'early', zone: 'red', eff: QUALITY.earlyMin + (QUALITY.earlyMax - QUALITY.earlyMin) * k };
-    }
-    if (charge < b.greenStart) {
-      const k = (charge - b.yellowStart) / (b.greenStart - b.yellowStart);
-      return { quality: 'good', zone: 'yellow', eff: QUALITY.goodMin + (QUALITY.goodMax - QUALITY.goodMin) * k };
-    }
-    if (charge <= b.greenEnd) {
-      const center = (b.greenStart + b.greenEnd) / 2;
-      const half = (b.greenEnd - b.greenStart) / 2;
-      const u = Math.abs(charge - center) / half;
-      if (u <= QUALITY.perfectCore) return { quality: 'perfect', zone: 'green', eff: QUALITY.perfect };
-      return { quality: 'great', zone: 'green', eff: QUALITY.great };
-    }
-    if (charge <= b.yellowEnd) return { quality: 'passed', zone: 'yellow', eff: QUALITY.passedYellow };
-    const k = Math.min(1, (charge - b.yellowEnd) / Math.max(0.01, 1 - b.yellowEnd));
-    return { quality: 'passed', zone: 'red', eff: QUALITY.passedYellow - (QUALITY.passedYellow - QUALITY.passedRedMin) * k };
-  }
-
-  /** wallHold opcional: duração real do toque (mais precisa que os quadros). */
-  release(env: SwimEnv = CALM_ENV, wallHold?: number): StrokeResult | null {
-    this.pendingPress = false;
-    if (!this.charging || this.finished) {
-      this.charging = false;
-      return null;
-    }
-    // O tempo real do toque é mais preciso que os quadros (e não depende do FPS).
-    if (wallHold !== undefined && wallHold >= 0 && wallHold < 5) this.chargeTime = wallHold;
-    this.charging = false;
-    const holdTime = this.chargeTime;
-    const charge = Math.min(1, holdTime / this.bar.chargeTime);
-    const long = holdTime > SWIM.tapMaxTime;
-
-    let quality: StrokeQuality;
-    let zone: StrokeZone;
-    let qualityEff: number;
-    let base: number;
-    let cost: number;
-    if (!long) {
-      quality = 'short';
-      zone = 'tap';
-      qualityEff = 1;
-      base = SWIM.shortPower;
-      cost = ENERGY.costShort;
-    } else {
-      const c = this.classify(charge);
-      quality = c.quality;
-      zone = c.zone;
-      qualityEff = c.eff;
-      base = SWIM.longPower;
-      cost = zone === 'green' ? ENERGY.costGreen : zone === 'yellow' ? ENERGY.costYellow : ENERGY.costRed;
-    }
-
-    // Ritmo: braçadas atropeladas rendem menos e quebram o combo.
-    const rhythm = Math.max(SWIM.rhythmFloor, Math.min(1, this.sinceStroke / SWIM.rhythmMinInterval));
-    const rushed = rhythm < ZONES.rushBreaksBelow;
-
-    // Combo
+    // Combo: ritmo perfeito sobe 1; errar (devagar ou rápido demais) só tira 1.
     let comboUp = false;
     const before = this.combo;
-    if (rushed || zone === 'red') {
-      this.combo = 0;
-    } else if (zone === 'green') {
-      if (rhythm >= 0.8) this.combo = Math.min(SWIM.comboMax, this.combo + 1);
+    if (quality === 'perfect') {
+      this.combo = Math.min(SWIM.comboMax, this.combo + 1);
       comboUp = this.combo >= 2 && this.combo > before;
       this.sinceHit = 0;
-    } else if (zone === 'yellow') {
-      this.combo = Math.max(0, this.combo - ZONES.yellowComboLoss);
+    } else if (quality === 'slow' || quality === 'rushed') {
+      this.combo = Math.max(0, this.combo - 1);
+    } else {
+      this.sinceHit = 0;
     }
-    const comboBroken = before >= 2 && this.combo < before && (rushed || zone === 'red' || this.combo <= 1);
+    const comboBroken = before >= 2 && this.combo < before;
     this.maxCombo = Math.max(this.maxCombo, this.combo);
 
-    if (zone === 'red') this.brake(ZONES.redDrag, ZONES.redDragTime);
-
-    // A energia de ANTES da braçada define o rendimento (sentido de forma suave pelo vigor).
-    const efficiency = qualityEff * rhythm * this.comboMultiplier * env.strokeMul * this.power * this.vigor;
-    const impulse = base * efficiency;
-
-    this.energy = Math.max(0, this.energy - cost);
-    this.thrustLeft = SWIM.thrustTime;
-    this.thrustAccel = this.thrustAccel * 0.3 + impulse / SWIM.thrustTime;
-    this.sinceStroke = 0;
-    this.strokeCount++;
-    this.strokesSinceBreath++;
-    this.lastStrokePower = long ? Math.min(1.3, efficiency) : 0.35;
-
-    // Deslize: a cada 5 seguidas no verde, as 3 próximas braçadas vão mais longe.
+    // Deslize: a cada 5 perfeitas seguidas, as 3 próximas braçadas vão mais longe.
     this.gliding = this.glideLeft > 0;
     if (this.gliding) this.glideLeft--;
     let glideEarned = false;
-    if (zone === 'green' && !rushed) {
-      this.greenStreak++;
-      if (this.greenStreak % GLIDE.every === 0) {
+    if (quality === 'perfect') {
+      this.perfectStreak++;
+      if (this.perfectStreak % GLIDE.every === 0) {
         this.glideLeft = GLIDE.strokes;
         glideEarned = true;
       }
     } else {
-      this.greenStreak = 0;
+      this.perfectStreak = 0;
     }
+
+    const qualityEff = QUALITY[quality];
+    const efficiency = qualityEff * this.comboMultiplier * env.strokeMul * this.power * this.vigor;
+    // Impulso instantâneo: com o freio da água, cada braçada rende ~strokeDistance metros.
+    const impulse = SWIM.waterDecay * SWIM.strokeDistance * efficiency;
+    this.speed = Math.min(SWIM.maxSpeed, this.speed + impulse);
+
+    const cost = quality === 'rushed' ? ENERGY.costRushed : ENERGY.costStroke;
+    this.energy = Math.max(0, this.energy - cost);
+    this.tapRate += (1 / Math.max(0.12, interval) - this.tapRate) * 0.35;
+    this.sinceStroke = 0;
+    this.strokeCount++;
+    this.strokesSinceBreath++;
+    this.lastStrokePower = Math.min(1.3, efficiency);
+    this.lastQuality = quality;
 
     this.stats.strokes++;
     this.stats[quality]++;
-    if (rushed) this.stats.rushed++;
 
     return {
       quality,
-      zone,
+      interval,
       efficiency,
       impulse,
       combo: this.combo,
       comboBroken,
       comboUp,
-      rushed,
+      rushed: quality === 'rushed',
       glide: this.gliding,
       glideEarned,
-      charge,
-      long,
       energyCost: cost,
     };
   }
@@ -294,7 +217,6 @@ export class Swimmer {
       this.stats.ignoredBreaths++;
       return fail('consecutive');
     }
-    this.cancelCharge();
     const gain = Math.min(ENERGY.breathGain, ENERGY.max - energyBefore);
     this.energy = energyBefore + gain;
     this.breathTimer = ENERGY.breathTime;
@@ -305,46 +227,27 @@ export class Swimmer {
   }
 
   update(dt: number, env: SwimEnv = CALM_ENV): void {
-    if (this.charging) this.chargeTime += dt;
     this.sinceStroke += dt;
     this.sinceHit += dt;
 
-    if (this.combo > 0 && this.sinceHit > SWIM.comboTimeout) {
-      this.combo = 0;
-    }
-
-    if (this.breathTimer > 0) {
-      this.breathTimer = Math.max(0, this.breathTimer - dt);
-      if (this.breathTimer === 0 && this.pendingPress) {
-        this.pendingPress = false;
-        this.charging = true;
-        this.chargeTime = 0;
-      }
-    }
+    if (this.combo > 0 && this.sinceHit > SWIM.comboTimeout) this.combo = 0;
+    if (this.breathTimer > 0) this.breathTimer = Math.max(0, this.breathTimer - dt);
+    if (this.sinceStroke > 1.2) this.tapRate *= Math.exp(-dt * 2);
 
     // Cansaço: o rendimento acompanha a energia aos poucos (sem saltos).
     const target = energyFactor(this.energy);
     this.vigor += (target - this.vigor) * Math.min(1, dt * ENERGY.fatigueRate);
     const tired = (1 - this.vigor) / (1 - ENERGY.emptyEfficiency);
 
-    if (this.brakeLeft > 0) {
-      this.brakeLeft -= dt;
-      if (this.brakeLeft <= 0) this.brakeMul = 1;
-    }
-
-    // Física
-    let accel = env.push;
-    if (this.thrustLeft > 0) {
-      const t = Math.min(dt, this.thrustLeft);
-      accel += this.thrustAccel * (t / dt);
-      this.thrustLeft -= dt;
-      if (this.thrustLeft <= 0) this.thrustAccel = 0;
-    }
-    const v = this.speed;
-    const dragMul = env.dragMul * this.brakeMul * (1 + ENERGY.emptyExtraDrag * tired) * (this.gliding ? GLIDE.dragMul : 1);
-    const drag = (SWIM.linearDrag * v + SWIM.quadDrag * v * v) * dragMul;
-    this.speed = Math.max(0, Math.min(SWIM.maxSpeed, v + (accel - drag) * dt));
+    // Freio da água: a velocidade cai rápido até o deslize mínimo (nunca para de vez).
+    const decay = SWIM.waterDecay * env.dragMul * (1 + ENERGY.emptyExtraDrag * tired) * (this.gliding ? GLIDE.dragMul : 1);
+    const floor = this.hasStroked && !this.finished ? SWIM.driftSpeed : 0;
+    let v = this.speed;
+    if (v > floor) v = floor + (v - floor) * Math.exp(-decay * dt);
+    v += env.push * dt;
+    this.speed = Math.max(0, Math.min(SWIM.maxSpeed, v));
     this.distance += this.speed * dt;
+    this.smoothSpeed += (this.speed - this.smoothSpeed) * Math.min(1, dt * 3);
 
     if (!this.finished) {
       this.stats.raceTime += dt;

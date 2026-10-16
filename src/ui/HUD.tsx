@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { RaceEngine } from '../game/raceEngine';
 import { formatTime, useEngineEvent, useTicker } from '../game/engineContext';
 import { isTouch, useGame } from '../store/gameStore';
@@ -7,80 +7,53 @@ import { BreathButton, SwimButton } from './Controls';
 import { ENERGY, SWIM } from '../config/balance';
 import { AudioButton, MedalRow, PauseButton } from './common';
 
-/* ===================== Barra de força ===================== */
-export function PowerBar({ engine, compact = false }: { engine: RaceEngine; compact?: boolean }) {
-  const needle = useRef<HTMLDivElement>(null);
-  const fill = useRef<HTMLDivElement>(null);
-  const ghost = useRef<HTMLDivElement>(null);
+/* ===================== Barra de ritmo (velocidade) ===================== */
+/** Velocidade que enche a barra até o fim (≈ ritmo ideal com combo). */
+const SPEED_FULL = 2.9;
+
+/**
+ * Barra de ritmo: vai do vermelho (devagar) ao verde (rápido) e mostra a
+ * VELOCIDADE. Tocar devagar = barra baixa; ritmo constante e rápido = verde.
+ */
+export function PowerBar({ engine }: { engine: RaceEngine }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const b = engine.playerBar;
+  const p = engine.player;
+  // O HUD redesenha ~15x/s; a velocidade já vem suavizada pelo motor.
+  const k = Math.max(0, Math.min(1, p.smoothSpeed / SPEED_FULL));
 
-  useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const p = engine.player;
-      const c = p.charge;
-      if (needle.current) {
-        needle.current.style.left = `${c * 100}%`;
-        needle.current.style.opacity = p.charging ? '1' : '0.45';
-      }
-      if (fill.current) fill.current.style.width = `${c * 100}%`;
-      if (wrap.current) {
-        const inGreen = p.charging && c >= b.greenStart && c <= b.greenEnd;
-        wrap.current.style.boxShadow = inGreen ? '0 0 18px rgba(80,255,120,0.9)' : '';
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [engine, b]);
-
+  // Pulso a cada braçada (resposta imediata ao toque).
   useEngineEvent(engine, (e) => {
-    if (e.type === 'stroke' && e.who === 'player' && e.result.long && ghost.current) {
-      const g = ghost.current;
-      g.style.left = `${e.result.charge * 100}%`;
-      g.style.transition = 'none';
-      g.style.opacity = '1';
+    if (e.type === 'stroke' && e.who === 'player' && wrap.current) {
+      const w = wrap.current;
+      const color = e.result.quality === 'perfect' ? '61,245,138' : e.result.quality === 'good' ? '255,210,63' : '255,123,107';
+      w.style.transition = 'none';
+      w.style.boxShadow = `0 0 16px rgba(${color},0.95)`;
+      w.style.transform = 'scaleY(1.12)';
       requestAnimationFrame(() => {
-        g.style.transition = 'opacity 0.9s ease-out';
-        g.style.opacity = '0';
+        w.style.transition = 'box-shadow 0.35s ease-out, transform 0.15s ease-out';
+        w.style.boxShadow = '';
+        w.style.transform = '';
       });
     }
   });
 
-  const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
-  const grad = `linear-gradient(90deg,
-    #ff3b3b 0%, #ff7a2f ${pct(b.yellowStart * 0.75)}, #ffd23f ${pct(b.yellowStart)},
-    #ffe066 ${pct(b.greenStart - 0.005)}, #29d65f ${pct(b.greenStart)}, #3df58a ${pct((b.greenStart + b.greenEnd) / 2)},
-    #29d65f ${pct(b.greenEnd)}, #ffe066 ${pct(b.greenEnd + 0.005)}, #ffb21f ${pct(b.yellowEnd)},
-    #ff7a2f ${pct(b.yellowEnd + 0.02)}, #ff3b3b 100%)`;
-  const center = (b.greenStart + b.greenEnd) / 2;
-
   return (
-    <div className={`hud-card w-full ${compact ? 'px-2 pb-2 pt-1' : 'px-3 pb-3 pt-1.5'}`}>
+    <div className="hud-card w-full px-3 pb-2.5 pt-1.5">
       <div className="font-display flex items-center justify-between text-[11px] uppercase tracking-wide text-white/90 sm:text-xs">
-        <span>Barra de força</span>
-        <span className="hidden text-[#3df58a] sm:inline">★ ponto ideal</span>
+        <span>Ritmo • velocidade</span>
+        <span className="normal-case text-[#3df58a]">{p.tapRate > 0.3 ? `${p.tapRate.toFixed(1)} toques/s` : 'toque 2–3x/s'}</span>
       </div>
-      <div ref={wrap} className="relative mt-3 transition-transform" style={{ borderRadius: 999 }}>
-        {/* indicador da zona ideal */}
+      <div ref={wrap} className="relative mt-1.5" style={{ borderRadius: 999 }}>
         <div
-          className="absolute -top-3.5 z-10 -translate-x-1/2 text-sm leading-none text-[#3df58a] drop-shadow"
-          style={{ left: pct(center) }}
+          className="power-track h-6 sm:h-7"
+          style={{ background: 'linear-gradient(90deg,#ff3b3b 0%,#ff7a2f 28%,#ffd23f 52%,#9be84a 70%,#29d65f 84%,#3df58a 100%)' }}
         >
-          ▼
-        </div>
-        <div className="power-track h-6 sm:h-7" style={{ background: grad }}>
-          <div className="absolute inset-y-0 border-x-2 border-white/80" style={{ left: pct(b.greenStart), width: pct(b.greenEnd - b.greenStart) }} />
-          <div ref={fill} className="absolute inset-y-0 left-0 bg-white/25" style={{ width: 0 }} />
-        </div>
-        <div ref={ghost} className="pointer-events-none absolute -bottom-2 z-10 -translate-x-1/2 text-xs text-white opacity-0">
-          ▲
+          {/* parte ainda não alcançada fica escurecida */}
+          <div className="absolute inset-y-0 right-0 bg-navy-900/70 transition-[width] duration-100" style={{ width: `${(1 - k) * 100}%` }} />
         </div>
         <div
-          ref={needle}
-          className="pointer-events-none absolute -inset-y-1.5 z-20 w-2 -translate-x-1/2 rounded-full border-2 border-navy-900 bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]"
-          style={{ left: 0 }}
+          className="pointer-events-none absolute -inset-y-1.5 z-20 w-2 -translate-x-1/2 rounded-full border-2 border-navy-900 bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] transition-[left] duration-100"
+          style={{ left: `${k * 100}%` }}
         />
       </div>
     </div>
@@ -178,12 +151,10 @@ interface Msg {
 }
 
 const QUALITY_MSG: Record<string, { text: string; color: string; size: number }> = {
-  perfect: { text: 'PERFEITO!', color: '#3df58a', size: 34 },
-  great: { text: 'ÓTIMO!', color: '#3df5ff', size: 30 },
-  good: { text: 'BOM!', color: '#ffd23f', size: 26 },
-  early: { text: 'MUITO CEDO!', color: '#ff7b6b', size: 26 },
-  passed: { text: 'PASSOU DO PONTO!', color: '#ff7b6b', size: 24 },
-  short: { text: 'BRAÇADA CURTA', color: '#ffffff', size: 18 },
+  perfect: { text: 'PERFEITO!', color: '#3df58a', size: 32 },
+  good: { text: 'Bom!', color: '#ffd23f', size: 24 },
+  slow: { text: 'Devagar!', color: '#ff9a3d', size: 24 },
+  rushed: { text: 'Rápido demais!', color: '#ff7b6b', size: 22 },
 };
 
 export function Feedback({ engine }: { engine: RaceEngine }) {
@@ -192,22 +163,18 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
   const push = (text: string, color: string, size: number) => {
     const id = ++idRef.current;
     setMsgs((m) => [...m.slice(-2), { id, text, color, size }]);
-    setTimeout(() => setMsgs((m) => m.filter((x) => x.id !== id)), 1100);
+    setTimeout(() => setMsgs((m) => m.filter((x) => x.id !== id)), 850);
   };
   useEngineEvent(engine, (e) => {
     if (e.type === 'stroke' && e.who === 'player') {
-      if (e.result.rushed) push('PERDEU O RITMO!', '#ff9a3d', 26);
-      else {
-        const q = QUALITY_MSG[e.result.quality];
-        push(q.text, q.color, q.size);
-      }
+      const q = QUALITY_MSG[e.result.quality];
+      push(q.text, q.color, q.size);
       if (e.result.glideEarned) push('🌊 SUPER DESLIZE! 3 BRAÇADAS', '#7ff0ff', 26);
       if (e.result.comboUp) {
         const n = e.result.combo;
         push(n >= SWIM.comboMax ? `COMBO x${n}! MÁXIMO!` : `COMBO x${n}!`, '#ffd23f', 28 + n * 2);
       }
     }
-    if (e.type === 'comboLost') push('PERDEU O RITMO!', '#ff9a3d', 22);
     if (e.type === 'breath') {
       const o = e.result.outcome;
       if (o === 'ok' && e.result.gain > 0) push(`+${Math.round(e.result.gain)} FÔLEGO!`, '#3df5ff', 28);
@@ -374,8 +341,8 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
           {!isTouch && (
             <div className="hud-card hidden w-48 shrink-0 flex-col justify-center gap-0.5 self-stretch px-3 py-1.5 lg:flex">
               <div className="text-[11px] font-bold leading-tight text-white/90">
-                <span className="font-display text-sun-300">{bindingLabel(bindings.swim)}</span> segure e solte no{' '}
-                <span className="text-[#3df58a]">verde</span> = NADAR
+                <span className="font-display text-sun-300">{bindingLabel(bindings.swim)}</span> = NADAR (toque{' '}
+                <span className="text-[#3df58a]">2–3x por segundo</span>)
               </div>
               <div className="text-[11px] font-bold leading-tight text-white/90">
                 <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+{ENERGY.breathGain} de fôlego)

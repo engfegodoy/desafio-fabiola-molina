@@ -25,14 +25,14 @@ export function RulesScreen() {
   const goTo = useGame((s) => s.goTo);
   const bindings = useGame((s) => s.bindings);
   const scheme = useGame((s) => s.mobileScheme);
-  const swimHow = isTouch ? (scheme === 'buttons' ? 'botão NADAR' : 'toque e segure') : bindingLabel(bindings.swim);
+  const swimHow = isTouch ? (scheme === 'buttons' ? 'botão NADAR' : 'toque na tela') : bindingLabel(bindings.swim);
   const breathHow = isTouch ? (scheme === 'buttons' ? 'botão RESPIRAR' : 'arraste para cima') : bindingLabel(bindings.breathe);
 
   const tips = [
-    { icon: '🏊', title: 'Nade no verde', text: `Segure (${swimHow}) e solte no VERDE.` },
+    { icon: '🏊', title: 'Toque para nadar', text: `Cada toque (${swimHow}) = 1 braçada. Ritmo constante: 2–3 por segundo.` },
     { icon: '🫁', title: `Respire a cada ${ENERGY.breathGain}`, text: `Cada braçada gasta 1 de fôlego. RESPIRAR (${breathHow}) devolve ${ENERGY.breathGain}.` },
     { icon: '🐢', title: 'Fôlego baixo', text: `Em ${ENERGY.lowAt}/${ENERGY.max} a barra pisca; em ${ENERGY.slowAt} você fica lento. Zerou? Afogou!` },
-    { icon: '🌊', title: 'Combo x5', text: '5 seguidas no verde: desliza mais nas 3 próximas.' },
+    { icon: '🌊', title: 'Combo', text: 'Ritmo PERFEITO sobe o combo. 5 seguidas: desliza mais nas 3 próximas.' },
   ];
 
   return (
@@ -50,7 +50,7 @@ export function RulesScreen() {
         ))}
       </div>
       <div className="font-display text-stroke-thin anim-wiggle mt-3 rounded-2xl bg-gradient-to-r from-[#0b2a6b] to-[#1f6fe5] px-4 py-2 text-center text-base text-sun-400 sm:text-lg">
-        SEGREDO DOS CAMPEÕES: ACERTE O VERDE, CONTROLE SUA ENERGIA E RESPIRE NA HORA CERTA!
+        SEGREDO DOS CAMPEÕES: RITMO CONSTANTE, FÔLEGO NO CONTROLE E RESPIRAR NA HORA CERTA!
       </div>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Button color="white" className="sm:w-40" onClick={() => goTo('menu')}>

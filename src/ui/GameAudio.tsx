@@ -43,7 +43,7 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
           break;
         case 'stroke':
           if (e.who === 'player') {
-            audio.stroke(e.result.long ? e.result.efficiency : 0.35);
+            audio.stroke(e.result.efficiency);
             audio.quality(e.result.quality, e.result.combo);
             if (e.result.comboUp && e.result.combo >= SWIM.comboMax) audio.comboMax();
           }
