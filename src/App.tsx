@@ -9,6 +9,7 @@ import { PHASE_STAGE } from './config/balance';
 import { RaceWorld } from './three/RaceWorld';
 import { FinalScene, MenuScene } from './three/scenes/MenuScene';
 import { MenuScreen } from './ui/MenuScreen';
+import { ControlsScreen, RulesScreen } from './ui/PreGameScreens';
 import { RaceScreen } from './ui/RaceScreen';
 import { TutorialScreen } from './ui/TutorialScreen';
 import { FinalScreen } from './ui/FinalScreen';
@@ -78,7 +79,7 @@ export default function App() {
           flipflops={3}
         >
           <Suspense fallback={null}>
-            {screen === 'menu' && <MenuScene />}
+            {(screen === 'menu' || screen === 'rules' || screen === 'controls') && <MenuScene />}
             {engine && <RaceWorld key={`${screen}-${phase}-${runId}`} engine={engine} />}
             {screen === 'final' && <FinalScene />}
           </Suspense>
@@ -87,6 +88,8 @@ export default function App() {
 
       <div className="absolute inset-0">
         {screen === 'menu' && <MenuScreen />}
+        {screen === 'rules' && <RulesScreen />}
+        {screen === 'controls' && <ControlsScreen />}
         {screen === 'tutorial' && engine && <TutorialScreen key={runId} engine={engine} />}
         {screen === 'race' && engine && <RaceScreen key={runId} engine={engine} />}
         {screen === 'final' && <FinalScreen />}

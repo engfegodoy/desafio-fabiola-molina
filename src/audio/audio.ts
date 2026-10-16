@@ -413,6 +413,32 @@ class AudioEngine {
     [72, 79].forEach((m, i) => this.tone(mtof(m), 0.2, { type: 'triangle', vol: 0.12, when: t + i * 0.09 }));
   }
 
+  /** Respiração válida: inspiração (ruído subindo) + brilho. */
+  breath(early = false) {
+    if (!this.ready) return;
+    const t = this.ctx!.currentTime;
+    this.noise(0.45, { type: 'bandpass', freq: 600, sweep: 2200, vol: 0.16, attack: 0.15, q: 0.7 });
+    if (!early) {
+      [76, 83].forEach((m, i) => this.tone(mtof(m), 0.2, { type: 'sine', vol: 0.09, when: t + 0.3 + i * 0.08 }));
+    } else {
+      this.tone(mtof(64), 0.18, { type: 'triangle', vol: 0.07, when: t + 0.3 });
+    }
+  }
+
+  /** Respiração recusada (duas seguidas). */
+  breathDenied() {
+    if (!this.ready) return;
+    this.tone(180, 0.18, { type: 'square', vol: 0.06, filter: 700 });
+  }
+
+  /** Alerta de energia baixa. */
+  energyAlert(level: 'warn' | 'low' | 'critical') {
+    if (!this.ready) return;
+    const t = this.ctx!.currentTime;
+    const n = level === 'critical' ? 3 : level === 'low' ? 2 : 1;
+    for (let i = 0; i < n; i++) this.tone(level === 'critical' ? 520 : 760, 0.09, { type: 'square', vol: 0.06, when: t + i * 0.13, filter: 2200 });
+  }
+
   copy() {
     if (!this.ready) return;
     this.tone(1046, 0.1, { type: 'triangle', vol: 0.12 });

@@ -4,7 +4,7 @@
  * ============================================================
  *  Todos os números que controlam a dificuldade do jogo ficam aqui.
  *  Unidades: distância em metros, tempo em segundos, velocidade em m/s.
- *  A energia é infinita: o desafio está no timing, no ritmo e no combo.
+ *  O desafio combina timing (zona verde), ritmo (combo) e fôlego (energia e respiração).
  *  Rode `npm run sim` para simular corridas com jogadores-robô de
  *  diferentes habilidades e conferir se as provas continuam vencíveis.
  */
@@ -41,6 +41,55 @@ export const SWIM = {
   comboMax: 5,
   /** Ficar este tempo (s) sem acertar uma braçada zera o combo. */
   comboTimeout: 2.6,
+};
+
+/**
+ * Energia e respiração.
+ * A energia NÃO se recupera sozinha: só a ação RESPIRAR devolve fôlego.
+ * Ritmo ideal: ~5 braçadas no verde (5 x 10 = 50) e uma respiração (+50).
+ */
+export const ENERGY = {
+  max: 100,
+  /** Custo por braçada, conforme a zona em que foi solta. */
+  costGreen: 10,
+  costYellow: 14,
+  costRed: 18,
+  /** Toque rápido (braçada curta). */
+  costShort: 8,
+  /** Quanto uma respiração válida devolve (limitado a max). */
+  breathGain: 50,
+  /** Duração da respiração (s): a cabeça vira e não dá para iniciar braçada. */
+  breathTime: 0.5,
+  /** Respirar com energia igual ou acima disto é "antecipado" (penalidade). */
+  earlyBreathAbove: 70,
+  /** Penalidade da respiração antecipada: perde o combo e freia um pouco. */
+  earlyBreathDrag: 1.8,
+  earlyBreathDragTime: 0.6,
+  /** Acima deste nível o nadador rende 100%. Abaixo, a eficiência cai aos poucos. */
+  fullAbove: 50,
+  /** Eficiência da braçada com energia zero. */
+  emptyEfficiency: 0.3,
+  /** Curvatura da queda (1 = linear, >1 cai mais forte perto de zero). */
+  curve: 1.25,
+  /** Resistência extra da água com energia zero (cansaço). */
+  emptyExtraDrag: 0.9,
+  /** Velocidade (por s) com que o corpo "sente" a mudança de energia: transição suave. */
+  fatigueRate: 1.4,
+  /** Limiares visuais do HUD. */
+  warnAt: 50,
+  lowAt: 49,
+  criticalAt: 20,
+};
+
+/** Penalidades das zonas da barra de força (além da eficiência menor). */
+export const ZONES = {
+  /** Zona vermelha freia: multiplicador de resistência por um instante. */
+  redDrag: 1.7,
+  redDragTime: 0.45,
+  /** Zona amarela antes do verde tira 1 do combo (amarela depois do verde também). */
+  yellowComboLoss: 1,
+  /** Braçada "atropelada" abaixo deste fator de ritmo quebra o combo: PERDEU O RITMO! */
+  rushBreaksBelow: 0.7,
 };
 
 /** Qualidade da braçada longa conforme o ponto em que foi solta. */
@@ -115,6 +164,10 @@ export interface OpponentConfig {
   /** Atraso médio (s) entre soltar e começar a próxima braçada. */
   pauseMin: number;
   pauseMax: number;
+  /** Ela respira quando a energia chega a este nível (ou abaixo). */
+  breatheBelow: number;
+  /** Atraso (s) para reagir e respirar. */
+  breathDelay: number;
 }
 
 export interface StageConfig {
@@ -180,8 +233,8 @@ export const STAGES: Record<StageKind, StageConfig> = {
     id: 'tutorial',
     phase: 0,
     title: 'TREINO',
-    subtitle: 'Piscina de treinamento (30 m)',
-    distance: 30,
+    subtitle: 'Piscina de treinamento',
+    distance: 9999,
     bar: { ...POOL_BAR, chargeTime: 1.0, yellowStart: 0.26, greenStart: 0.37, greenEnd: 0.67 },
     waves: NO_WAVES,
     playerPower: 1,
@@ -197,12 +250,14 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.0,
-      perfectRate: 0.3,
-      greatRate: 0.45,
-      goodRate: 0.2,
-      pauseMin: 0.1,
-      pauseMax: 0.22,
+      power: 1.09,
+      perfectRate: 0.5,
+      greatRate: 0.38,
+      goodRate: 0.1,
+      pauseMin: 0.08,
+      pauseMax: 0.16,
+      breatheBelow: 52,
+      breathDelay: 0.08,
     },
   },
   seaDay: {
@@ -234,12 +289,14 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.02,
-      perfectRate: 0.34,
-      greatRate: 0.44,
-      goodRate: 0.17,
-      pauseMin: 0.09,
-      pauseMax: 0.2,
+      power: 1.09,
+      perfectRate: 0.5,
+      greatRate: 0.38,
+      goodRate: 0.1,
+      pauseMin: 0.08,
+      pauseMax: 0.16,
+      breatheBelow: 52,
+      breathDelay: 0.08,
     },
   },
   seaNight: {
@@ -271,12 +328,14 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.0,
-      perfectRate: 0.42,
-      greatRate: 0.4,
-      goodRate: 0.14,
-      pauseMin: 0.08,
-      pauseMax: 0.17,
+      power: 1.08,
+      perfectRate: 0.56,
+      greatRate: 0.34,
+      goodRate: 0.08,
+      pauseMin: 0.07,
+      pauseMax: 0.14,
+      breatheBelow: 52,
+      breathDelay: 0.08,
     },
   },
   shark: {
@@ -308,7 +367,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     shark: {
       startGap: 11,
-      baseSpeed: 2.93,
+      baseSpeed: 2.9,
       speedRamp: 0.006,
       surgeAmp: 0.32,
       surgePeriod: 6.5,

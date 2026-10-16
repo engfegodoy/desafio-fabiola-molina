@@ -7,6 +7,7 @@ import { HUD } from './HUD';
 import { TouchControl, useKeyboard } from './Controls';
 import { AudioButton, Button, MedalRow } from './common';
 import { Confetti } from './Confetti';
+import { ControlsPanel } from './ControlsPanel';
 
 const PHASE_TAG: Record<string, { tag: string; emoji: string; goal: string }> = {
   pool: { tag: 'FASE 1', emoji: '🏊‍♀️', goal: 'Vença a Fabiola Molina nos 50 metros!' },
@@ -86,7 +87,7 @@ function StageOverlay({ engine }: { engine: RaceEngine }) {
       )}
       {s === 'outro' && <OutroText engine={engine} />}
       {s === 'intro' && (
-        <div className="safe-pad pointer-events-auto absolute bottom-24 right-0 z-30 sm:bottom-28">
+        <div className="safe-pad pointer-events-auto absolute right-0 top-[46%] z-30">
           <Button color="white" className="!px-4 !py-2 !text-base" onClick={() => engine.skipIntro()}>
             Pular ▸▸
           </Button>
@@ -116,7 +117,7 @@ function OutroText({ engine }: { engine: RaceEngine }) {
 function ScoreChips({ r }: { r: PhaseResult }) {
   const items = [
     { icon: '⚡', label: 'Velocidade', v: r.breakdown.velocidade, bg: 'from-sky-400 to-blue-600' },
-    { icon: '🎵', label: 'Ritmo', v: r.breakdown.ritmo, bg: 'from-pink-400 to-rose-600' },
+    { icon: '❤️', label: 'Resistência', v: r.breakdown.resistencia, bg: 'from-pink-400 to-rose-600' },
     { icon: '⭐', label: 'Técnica', v: r.breakdown.tecnica, bg: 'from-yellow-300 to-amber-500' },
     { icon: '🏆', label: 'Conquista', v: r.breakdown.conquista, bg: 'from-cyan-300 to-teal-500' },
   ];
@@ -227,23 +228,37 @@ function PauseMenu() {
   const retry = useGame((s) => s.retryPhase);
   const toMenu = useGame((s) => s.toMenu);
   const screen = useGame((s) => s.screen);
+  const [controls, setControls] = useState(false);
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm">
-      <div className="card anim-pop flex w-full max-w-xs flex-col gap-3 p-6 text-center">
-        <div className="font-display text-stroke text-5xl text-sun-400">PAUSA</div>
-        <div className="flex justify-center">
-          <AudioButton />
+    <div className="absolute inset-0 z-50 flex items-center justify-center overflow-y-auto bg-navy-900/60 p-4 backdrop-blur-sm" style={{ touchAction: 'pan-y' }}>
+      {controls ? (
+        <div className="card anim-pop my-auto w-full max-w-xl p-4 sm:p-6">
+          <div className="font-display text-stroke mb-3 text-center text-4xl text-sun-400">CONTROLES</div>
+          <ControlsPanel />
+          <Button color="yellow" className="mt-4 w-full" onClick={() => setControls(false)}>
+            ✔ Pronto
+          </Button>
         </div>
-        <Button color="yellow" big onClick={() => setPaused(false)}>
-          ▶ Continuar
-        </Button>
-        <Button color="blue" onClick={retry}>
-          ↻ {screen === 'tutorial' ? 'Reiniciar treino' : 'Reiniciar fase'}
-        </Button>
-        <Button color="white" onClick={toMenu}>
-          ⌂ Menu inicial
-        </Button>
-      </div>
+      ) : (
+        <div className="card anim-pop flex w-full max-w-xs flex-col gap-3 p-6 text-center">
+          <div className="font-display text-stroke text-5xl text-sun-400">PAUSA</div>
+          <div className="flex justify-center">
+            <AudioButton />
+          </div>
+          <Button color="yellow" big onClick={() => setPaused(false)}>
+            ▶ Continuar
+          </Button>
+          <Button color="white" onClick={() => setControls(true)}>
+            ⚙ Controles
+          </Button>
+          <Button color="blue" onClick={retry}>
+            ↻ {screen === 'tutorial' ? 'Reiniciar treino' : 'Reiniciar fase'}
+          </Button>
+          <Button color="white" onClick={toMenu}>
+            ⌂ Menu inicial
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,11 +1,11 @@
 import type { OpponentConfig, SharkConfig } from '../config/balance.ts';
-import { QUALITY } from '../config/balance.ts';
+import { ENERGY, QUALITY } from '../config/balance.ts';
 import { Swimmer, type StrokeResult, type SwimEnv } from './swimmer.ts';
 import type { WaveWarning } from './waves.ts';
 
 /**
  * Inteligência da Fabiola: ela usa exatamente a mesma física do jogador,
- * decidindo quando segurar e soltar a braçada. Nada é predeterminado —
+ * decidindo quando segurar e soltar a braçada e quando respirar. Nada é predeterminado —
  * o resultado sai da simulação da corrida.
  */
 export class OpponentAI {
@@ -49,9 +49,15 @@ export class OpponentAI {
         case 'wait':
           this.waitTimer -= dt;
           if (this.waitTimer <= 0) {
-            this.target = this.pickTarget();
-            s.press();
-            this.state = 'charging';
+            if (s.energy <= this.cfg.breatheBelow && s.strokesSinceBreath >= 1) {
+              // Respira na hora certa (~a cada 5 braçadas) e retoma o ritmo.
+              s.breathe();
+              this.waitTimer = ENERGY.breathTime + this.cfg.breathDelay * (0.5 + this.rng());
+            } else {
+              this.target = this.pickTarget();
+              s.press();
+              this.state = 'charging';
+            }
           }
           break;
         case 'charging': {

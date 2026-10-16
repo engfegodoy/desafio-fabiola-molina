@@ -20,7 +20,7 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
   }, []);
 
   useEffect(() => {
-    if (screen === 'menu') {
+    if (screen === 'menu' || screen === 'rules' || screen === 'controls') {
       audio.playMusic('menu');
       audio.setAmbience('crowd');
     } else if (screen === 'final') {
@@ -50,6 +50,13 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
           break;
         case 'comboLost':
           audio.comboLost();
+          break;
+        case 'breath':
+          if (e.result.valid) audio.breath(e.result.outcome === 'early');
+          else if (e.result.outcome === 'consecutive') audio.breathDenied();
+          break;
+        case 'energy':
+          audio.energyAlert(e.level);
           break;
         case 'wave':
           audio.wave(e.kind);

@@ -3,9 +3,16 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PoolScene, POOL } from './PoolScene';
 import { SeaScene } from './SeaScene';
-import { FABIOLA_LOOK, PLAYER_LOOK, Swimmer3D, type SwimmerPose } from '../Swimmer3D';
+import { FABIOLA_LOOK, playerLook, Swimmer3D, type SwimmerPose } from '../Swimmer3D';
 import { Splashes, splashBus } from '../Splashes';
-import { isMobile, useGame } from '../../store/gameStore';
+import { isMobile, suitHex, useGame } from '../../store/gameStore';
+
+/** Visual do jogador escolhido na tela inicial (atualiza na hora). */
+function usePlayerLook() {
+  const gender = useGame((s) => s.gender);
+  const suitColor = useGame((s) => s.suitColor);
+  return useMemo(() => playerLook(gender, suitHex(suitColor)), [gender, suitColor]);
+}
 
 function Bubbles({ count = 70, area = [6, 30] as [number, number] }) {
   const ref = useRef<THREE.InstancedMesh>(null);
@@ -64,6 +71,7 @@ function OrbitCam({ target, radius, height, speed = 0.08, offsetX = 0 }: { targe
 
 export function MenuScene() {
   const quality = useGame((s) => s.quality);
+  const look = usePlayerLook();
   const target = useMemo(() => new THREE.Vector3(1.25, POOL.deckY + 0.67, POOL.startWall + 0.5), []);
   const drive = useMemo(
     () => (pose: SwimmerPose, t: number) => {
@@ -101,7 +109,7 @@ export function MenuScene() {
       <ambientLight intensity={0.3} />
       <directionalLight position={[5, 12, 8]} intensity={2.4} castShadow={quality === 'high'} shadow-mapSize={[1024, 1024]} />
       <PoolScene length={50} crowd quality={quality} lanes={isMobile ? 2 : 5} />
-      <Swimmer3D look={PLAYER_LOOK} drive={drive} castShadow={quality === 'high'} />
+      <Swimmer3D look={look} drive={drive} castShadow={quality === 'high'} />
       <Swimmer3D look={FABIOLA_LOOK} drive={swimDrive} castShadow={false} />
       <Bubbles count={quality === 'high' ? 90 : 40} />
       <Splashes max={200} />
@@ -113,6 +121,7 @@ export function MenuScene() {
 /** Fundo da tela final: praia ao pôr do sol com a nadadora comemorando. */
 export function FinalScene() {
   const quality = useGame((s) => s.quality);
+  const look = usePlayerLook();
   const D = 40;
   const target = useMemo(() => new THREE.Vector3(0, 0.4, -D - 4.5), []);
   const drive = useMemo(
@@ -144,7 +153,7 @@ export function FinalScene() {
       <directionalLight position={[-4, 8, -30]} intensity={2.4} color="#ffc58a" />
       <directionalLight position={[3, 6, -60]} intensity={1.2} color="#ffffff" />
       <SeaScene variant="sunset" distance={D} quality={quality} ambient={0.1} getWaves={noWaves} followZ={fz} beach arch={false} />
-      <Swimmer3D look={PLAYER_LOOK} drive={drive} castShadow={false} />
+      <Swimmer3D look={look} drive={drive} castShadow={false} />
       <Swimmer3D look={FABIOLA_LOOK} drive={fab} castShadow={false} scale={1.04} />
       <OrbitCam target={target} radius={5.5} height={1.1} speed={0.12} />
     </>

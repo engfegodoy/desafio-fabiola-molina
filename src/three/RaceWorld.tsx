@@ -3,9 +3,10 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { RaceEngine } from '../game/raceEngine';
 import { waterHeight } from '../game/waves';
-import { isMobile, useGame } from '../store/gameStore';
+import { isMobile, suitHex, useGame } from '../store/gameStore';
 import { audio } from '../audio/audio';
-import { FABIOLA_LOOK, PLAYER_LOOK, Swimmer3D, type SwimmerPose } from './Swimmer3D';
+import { FABIOLA_LOOK, playerLook as buildPlayerLook, Swimmer3D, type SwimmerPose } from './Swimmer3D';
+import { ENERGY } from '../config/balance';
 import { Shark3D, type SharkPose } from './Shark3D';
 import { Splashes, splashBus } from './Splashes';
 import { PoolScene, POOL } from './scenes/PoolScene';
@@ -50,6 +51,7 @@ function makeDrive(engine: RaceEngine, who: 'player' | 'opponent') {
     pose.speed = sw.speed;
     pose.charging = sw.charging;
     pose.charge = sw.charge;
+    pose.breathing = sw.breathTimer > 0 ? Math.max(0.001, 1 - sw.breathTimer / ENERGY.breathTime) : 0;
 
     const swim = () => {
       pose.anim = 'swim';
@@ -452,6 +454,8 @@ function Lights({ variant, engine, quality }: { variant: 'pool' | SeaVariant; en
 export function RaceWorld({ engine }: { engine: RaceEngine }) {
   const quality = useGame((s) => s.quality);
   const playerName = useGame((s) => s.playerName);
+  const gender = useGame((s) => s.gender);
+  const suitColor = useGame((s) => s.suitColor);
   const paused = useGame((s) => s.paused);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
@@ -479,7 +483,10 @@ export function RaceWorld({ engine }: { engine: RaceEngine }) {
   const variant: SeaVariant = kind === 'seaDay' ? 'day' : kind === 'seaNight' ? 'night' : 'sunset';
   const ambient = engine.cfg.waves.ambient;
 
-  const playerLook = useMemo(() => ({ ...PLAYER_LOOK, label: playerName || 'VOCÊ', labelClass: 'swimmer-label player' }), [playerName]);
+  const playerLook = useMemo(
+    () => ({ ...buildPlayerLook(gender, suitHex(suitColor)), label: playerName || 'VOCÊ', labelClass: 'swimmer-label player' }),
+    [playerName, gender, suitColor],
+  );
   const fabLook = useMemo(() => ({ ...FABIOLA_LOOK, label: 'FABIOLA MOLINA', labelClass: 'swimmer-label fabiola' }), []);
   const playerDrive = useMemo(() => makeDrive(engine, 'player'), [engine]);
   const oppDrive = useMemo(() => (engine.opponent ? makeDrive(engine, 'opponent') : null), [engine]);

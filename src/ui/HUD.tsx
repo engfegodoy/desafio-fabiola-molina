@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RaceEngine } from '../game/raceEngine';
 import { formatTime, useEngineEvent, useTicker } from '../game/engineContext';
-import { useGame } from '../store/gameStore';
-import { SWIM } from '../config/balance';
+import { isTouch, useGame } from '../store/gameStore';
+import { bindingLabel } from '../game/keybindings';
+import { BreathButton, SwimButton } from './Controls';
+import { ENERGY, SWIM } from '../config/balance';
 import { AudioButton, MedalRow, PauseButton } from './common';
 
 /* ===================== Barra de força ===================== */
@@ -58,7 +60,7 @@ export function PowerBar({ engine, compact = false }: { engine: RaceEngine; comp
     <div className={`hud-card w-full ${compact ? 'px-2 pb-2 pt-1' : 'px-3 pb-3 pt-1.5'}`}>
       <div className="font-display flex items-center justify-between text-[11px] uppercase tracking-wide text-white/90 sm:text-xs">
         <span>Barra de força</span>
-        <span className="text-[#3df58a]">★ ponto ideal</span>
+        <span className="hidden text-[#3df58a] sm:inline">★ ponto ideal</span>
       </div>
       <div ref={wrap} className="relative mt-3 transition-transform" style={{ borderRadius: 999 }}>
         {/* indicador da zona ideal */}
@@ -90,7 +92,7 @@ export function ComboBox({ engine }: { engine: RaceEngine }) {
   const c = engine.player.combo;
   const active = c >= 2;
   return (
-    <div className="hud-card flex min-w-[68px] flex-col items-center justify-center px-2 pb-1 pt-1">
+    <div className="hud-card flex min-w-[54px] flex-col items-center justify-center px-1.5 pb-1 pt-1 sm:min-w-[68px] sm:px-2">
       <div className="font-display text-[11px] uppercase text-white/90 sm:text-xs">Combo</div>
       <div
         key={c}
@@ -98,6 +100,43 @@ export function ComboBox({ engine }: { engine: RaceEngine }) {
         style={{ fontSize: active ? 30 : 24 }}
       >
         x{Math.max(1, c)}
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Energia ===================== */
+export function energyState(e: number) {
+  const v = Math.round(e);
+  if (v <= ENERGY.criticalAt) return { key: 'critical', label: 'SEM FÔLEGO!', color: 'linear-gradient(90deg,#ff2d2d,#ff6b4a)', text: 'text-coral-400', blink: 'blink-strong' } as const;
+  if (v <= ENERGY.lowAt) return { key: 'low', label: 'RESPIRE!', color: 'linear-gradient(90deg,#ff7a1a,#ffb21f)', text: 'text-orange-300', blink: 'blink-soft' } as const;
+  if (v <= ENERGY.warnAt) return { key: 'warn', label: 'ATENÇÃO', color: 'linear-gradient(90deg,#ffd23f,#ffe873)', text: 'text-sun-300', blink: '' } as const;
+  return { key: 'ok', label: 'ENERGIA', color: 'linear-gradient(90deg,#22d3ee,#3df58a)', text: 'text-white/90', blink: '' } as const;
+}
+
+export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; highlight?: boolean }) {
+  const p = engine.player;
+  const st = energyState(p.energy);
+  const [glow, setGlow] = useState(0);
+  useEngineEvent(engine, (e) => {
+    if (e.type === 'breath' && e.result.valid) setGlow((g) => g + 1);
+  });
+  return (
+    <div
+      key={glow}
+      className={`hud-card px-2.5 pb-1.5 pt-1 sm:px-3 ${glow ? 'breath-glow' : ''} ${highlight ? 'ring-4 ring-sun-400' : ''}`}
+    >
+      <div className="font-display flex items-center justify-between text-[11px] uppercase sm:text-xs">
+        <span className={`${st.text} ${st.blink}`}>🫁 {st.label}</span>
+        <span className={`tabular-nums ${st.text}`}>{Math.round(p.energy)}%</span>
+      </div>
+      <div className={`relative mt-1 h-4 overflow-hidden rounded-full border-2 border-white/80 bg-navy-900 sm:h-5 ${st.blink}`}>
+        <div
+          className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-150"
+          style={{ width: `${p.energy}%`, background: st.color, boxShadow: st.key === 'ok' ? '0 0 10px rgba(60,240,255,0.6)' : '' }}
+        />
+        {/* marca dos 50%: abaixo dela a nadadora perde velocidade */}
+        <div className="absolute inset-y-0 border-l-2 border-dashed border-white/70" style={{ left: `${ENERGY.fullAbove}%` }} />
       </div>
     </div>
   );
@@ -130,14 +169,28 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
   };
   useEngineEvent(engine, (e) => {
     if (e.type === 'stroke' && e.who === 'player') {
-      const q = QUALITY_MSG[e.result.quality];
-      push(q.text, q.color, q.size);
+      if (e.result.rushed) push('PERDEU O RITMO!', '#ff9a3d', 26);
+      else {
+        const q = QUALITY_MSG[e.result.quality];
+        push(q.text, q.color, q.size);
+      }
       if (e.result.comboUp) {
         const n = e.result.combo;
         push(n >= SWIM.comboMax ? `COMBO x${n}! MÁXIMO!` : `COMBO x${n}!`, '#ffd23f', 28 + n * 2);
       }
     }
-    if (e.type === 'comboLost') push('COMBO PERDIDO', '#c8d3e6', 18);
+    if (e.type === 'comboLost') push('PERDEU O RITMO!', '#ff9a3d', 22);
+    if (e.type === 'breath') {
+      const o = e.result.outcome;
+      if (o === 'ok') push(`+${Math.round(e.result.gain)}% FÔLEGO!`, '#3df5ff', 28);
+      else if (o === 'early') push('RESPIROU CEDO DEMAIS! −RITMO', '#ffb21f', 22);
+      else if (o === 'consecutive') push('DÊ UMA BRAÇADA ANTES DE RESPIRAR!', '#ff7b6b', 20);
+    }
+    if (e.type === 'energy') {
+      if (e.level === 'warn') push('ATENÇÃO: ENERGIA EM 50%', '#ffd23f', 20);
+      else if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 26);
+      else push('SEM FÔLEGO!', '#ff3b3b', 30);
+    }
   });
   return (
     <div className="pointer-events-none absolute right-11 top-[34%] z-20 flex flex-col items-end gap-1 sm:right-24 md:right-28">
@@ -195,9 +248,13 @@ export function ProgressRail({ engine }: { engine: RaceEngine }) {
 }
 
 /* ===================== HUD principal ===================== */
-export function HUD({ engine, tutorial = false }: { engine: RaceEngine; tutorial?: boolean }) {
+export function HUD({ engine, tutorial = false, energyHighlight = false }: { engine: RaceEngine; tutorial?: boolean; energyHighlight?: boolean }) {
   useTicker(15);
   const name = useGame((s) => s.playerName);
+  const gender = useGame((s) => s.gender);
+  const scheme = useGame((s) => s.mobileScheme);
+  const bindings = useGame((s) => s.bindings);
+  const buttons = isTouch && scheme === 'buttons';
   const phase = useGame((s) => s.phase);
   const p = engine.player;
   const D = engine.cfg.distance;
@@ -211,7 +268,7 @@ export function HUD({ engine, tutorial = false }: { engine: RaceEngine; tutorial
       <div className="safe-pad absolute inset-x-0 top-0 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-1.5 sm:gap-2">
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="hud-card flex min-w-0 max-w-full items-center gap-2 px-2 py-1.5 sm:max-w-xs sm:px-3">
-            <span className="text-lg">🏊‍♀️</span>
+            <span className="text-lg">{gender === 'm' ? '🏊‍♂️' : '🏊‍♀️'}</span>
             <span className="font-display truncate text-sm text-sun-300 sm:text-lg">{name}</span>
           </div>
           {engine.opponent && showRace && (
@@ -235,9 +292,9 @@ export function HUD({ engine, tutorial = false }: { engine: RaceEngine; tutorial
               <div className="font-display text-xl tabular-nums sm:text-3xl">{formatTime(engine.time)}</div>
             </div>
           )}
-          {!isShark && showRace && (
+          {!isShark && !tutorial && showRace && (
             <div className="font-display rounded-full bg-navy-800/70 px-3 py-0.5 text-xs text-white">
-              {Math.max(0, D - p.distance).toFixed(0)} m {tutorial ? 'até o fim do treino' : 'para a chegada'}
+              {Math.max(0, D - p.distance).toFixed(0)} m para a chegada
             </div>
           )}
         </div>
@@ -278,17 +335,29 @@ export function HUD({ engine, tutorial = false }: { engine: RaceEngine; tutorial
 
       {/* base */}
       <div className="safe-pad absolute inset-x-0 bottom-0">
-        <div className="mx-auto flex max-w-4xl items-stretch gap-1.5 sm:gap-2">
-          <div className="hud-card hidden w-44 shrink-0 flex-col justify-center px-3 py-1.5 lg:flex">
-            <div className="font-display text-xs text-sun-300">TOQUE / ESPAÇO</div>
-            <div className="text-[11px] font-bold leading-tight text-white/90">
-              Rápido = braçada curta. Segure e solte no <span className="text-[#3df58a]">verde</span>!
+        <div className="mx-auto flex max-w-4xl items-end gap-1.5 sm:gap-2">
+          {buttons && <BreathButton engine={engine} />}
+          {!isTouch && (
+            <div className="hud-card hidden w-48 shrink-0 flex-col justify-center gap-0.5 self-stretch px-3 py-1.5 lg:flex">
+              <div className="text-[11px] font-bold leading-tight text-white/90">
+                <span className="font-display text-sun-300">{bindingLabel(bindings.swim)}</span> segure e solte no{' '}
+                <span className="text-[#3df58a]">verde</span> = NADAR
+              </div>
+              <div className="text-[11px] font-bold leading-tight text-white/90">
+                <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+50%)
+              </div>
             </div>
-          </div>
-          <div className="min-w-0 flex-1">
+          )}
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex items-stretch gap-1.5">
+              <div className="min-w-0 flex-1">
+                <EnergyBar engine={engine} highlight={energyHighlight} />
+              </div>
+              <ComboBox engine={engine} />
+            </div>
             <PowerBar engine={engine} />
           </div>
-          <ComboBox engine={engine} />
+          {buttons && <SwimButton engine={engine} />}
         </div>
       </div>
     </div>

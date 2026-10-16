@@ -294,3 +294,39 @@ input {
   border: 3px solid #fff;
   box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.3);
 }
+
+/* ---------- Energia: piscar suave (respeita movimento reduzido) ---------- */
+@keyframes blink-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@keyframes blink-strong {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.8); }
+  50% { opacity: 0.35; box-shadow: 0 0 14px 4px rgba(255, 59, 59, 0.6); }
+}
+.blink-soft { animation: blink-soft 1s ease-in-out infinite; }
+.blink-strong { animation: blink-strong 0.55s ease-in-out infinite; }
+@keyframes breath-glow {
+  0% { box-shadow: 0 0 0 0 rgba(61, 245, 255, 0.9); }
+  100% { box-shadow: 0 0 0 18px rgba(61, 245, 255, 0); }
+}
+.breath-glow { animation: breath-glow 0.7s ease-out; }
+
+/* ---------- Demonstrações da tela de controles ---------- */
+@keyframes demo-press { 0%, 60%, 100% { transform: scale(1); } 70%, 90% { transform: scale(0.82); } }
+@keyframes demo-hold { 0%, 10% { transform: scale(1); } 15%, 55% { transform: scale(0.85); } 60%, 100% { transform: scale(1); } }
+@keyframes demo-needle { 0%, 12% { left: 0; } 55% { left: 52%; } 60%, 100% { left: 52%; opacity: 0; } }
+@keyframes demo-finger { 0%, 10% { transform: translate(-50%, 0) scale(1); } 20%, 45% { transform: translate(-50%, 0) scale(0.85); } 55% { transform: translate(-50%, 0) scale(1); } 65% { transform: translate(-50%, 0) scale(0.85); } 85% { transform: translate(-50%, -34px) scale(0.85); opacity: 1; } 100% { transform: translate(-50%, -34px); opacity: 0; } }
+@keyframes demo-arrow { 0%, 60% { opacity: 0; } 75%, 90% { opacity: 1; } 100% { opacity: 0; } }
+.demo-tap-left { animation: demo-press 2.4s ease-in-out infinite; }
+.demo-hold-right { animation: demo-hold 2.4s ease-in-out infinite; }
+.demo-needle { animation: demo-needle 2.4s linear infinite; }
+.demo-finger { animation: demo-finger 3s ease-in-out infinite; }
+.demo-arrow { animation: demo-arrow 3s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .blink-soft, .blink-strong, .breath-glow, .anim-glow, .anim-wiggle, .anim-danger,
+  .demo-tap-left, .demo-hold-right, .demo-needle, .demo-finger, .demo-arrow, .shine::after {
+    animation: none !important;
+  }
+}

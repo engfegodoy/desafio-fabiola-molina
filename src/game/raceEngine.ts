@@ -1,6 +1,6 @@
-import { LANES, STAGES, SWIM, TIMING, type PhaseId, type StageConfig, type StageKind } from '../config/balance.ts';
+import { ENERGY, LANES, STAGES, SWIM, TIMING, type PhaseId, type StageConfig, type StageKind } from '../config/balance.ts';
 import { OpponentAI, Shark } from './opponent.ts';
-import { Swimmer, type StrokeResult } from './swimmer.ts';
+import { Swimmer, type BreathResult, type StrokeResult } from './swimmer.ts';
 import { mulberry32, WaveField, type WaveWarning } from './waves.ts';
 
 export type RaceState = 'intro' | 'countdown' | 'racing' | 'finishing' | 'outro' | 'done';
@@ -8,7 +8,7 @@ export type Outcome = 'win' | 'lose' | 'escaped' | 'caught';
 
 export interface ScoreBreakdown {
   velocidade: number;
-  ritmo: number;
+  resistencia: number;
   tecnica: number;
   conquista: number;
 }
@@ -25,6 +25,7 @@ export interface PhaseResult {
   maxCombo: number;
   perfects: number;
   strokes: number;
+  breaths: number;
 }
 
 export type EngineEvent =
@@ -38,19 +39,22 @@ export type EngineEvent =
   | { type: 'escaped' }
   | { type: 'result'; result: PhaseResult }
   | { type: 'wave'; kind: 'front' | 'back' }
-  | { type: 'comboLost' };
+  | { type: 'comboLost' }
+  | { type: 'breath'; who: 'player'; result: BreathResult }
+  | { type: 'energy'; level: 'warn' | 'low' | 'critical' };
 
 type Listener = (e: EngineEvent) => void;
 
+/** Treino obrigatório: 15 braçadas no verde e 2 respirações válidas. */
 export const TUTORIAL_STEPS = [
-  { key: 'short', need: 1 },
-  { key: 'long', need: 1 },
-  { key: 'green', need: 1 },
-  { key: 'combo', need: 2 },
+  { key: 'swim', need: 5 },
+  { key: 'breath', need: 1 },
+  { key: 'swim', need: 5 },
+  { key: 'breath', need: 1 },
+  { key: 'swim', need: 5 },
 ] as const;
-
-/** Se o jogador demorar neste tempo (s) em um passo, o treino segue sozinho. */
-export const TUTORIAL_STEP_TIMEOUT = 15;
+export const TUTORIAL_TOTAL_GREEN = 15;
+export const TUTORIAL_TOTAL_BREATHS = 2;
 
 /**
  * Motor da prova. Puro (sem React/Three), atualizado a cada quadro.
@@ -83,8 +87,12 @@ export class RaceEngine {
   // Tutorial
   tutorialStep = 0;
   tutorialCount = 0;
-  tutorialStepTime = 0;
   tutorialDone = false;
+  /** Totais do treino (braçadas no verde e respirações válidas). */
+  tutorialGreen = 0;
+  tutorialBreaths = 0;
+  /** Último nível de energia avisado (para não repetir alertas). */
+  private energyLevel: 'ok' | 'warn' | 'low' | 'critical' = 'ok';
 
   constructor(kind: StageKind, seed = Math.floor(Math.random() * 1e9)) {
     this.kind = kind;
@@ -147,12 +155,33 @@ export class RaceEngine {
   /** wallMs: horário real do toque (performance.now) para medir a força com precisão. */
   press(wallMs?: number) {
     if (!this.controllable) return;
-    if (!this.player.charging) this.pressWall = wallMs ?? null;
-    this.player.press();
+    const started = this.player.press();
+    // Se ficou aguardando o fim da respiração, mede pelos quadros.
+    if (started) this.pressWall = wallMs ?? null;
+    else if (this.player.pendingPress) this.pressWall = null;
+  }
+
+  /** Cancela a braçada em carregamento (gesto de respirar no celular). */
+  cancelCharge() {
+    this.player.cancelCharge();
+    this.pressWall = null;
+  }
+
+  /** RESPIRAR: recupera 50% de energia sem parar a nadadora. */
+  breathe() {
+    if (!this.controllable) return;
+    this.pressWall = null;
+    const r = this.player.breathe();
+    this.emit({ type: 'breath', who: 'player', result: r });
+    if (r.valid) this.energyLevel = 'ok';
+    if (this.kind === 'tutorial') this.tutorialOnBreath(r);
   }
 
   release(wallMs?: number) {
-    if (!this.player.charging) return;
+    if (!this.player.charging) {
+      this.player.pendingPress = false;
+      return;
+    }
     if (!this.controllable) {
       this.player.charging = false;
       return;
@@ -165,7 +194,17 @@ export class RaceEngine {
       this.emit({ type: 'stroke', who: 'player', result: r, x: this.playerX, z: -this.player.distance });
       if (r.comboBroken) this.emit({ type: 'comboLost' });
       if (this.kind === 'tutorial') this.tutorialOnStroke(r);
+      this.checkEnergyAlerts();
     }
+  }
+
+  /** Avisos de energia: atenção em 50%, "PRECISA RESPIRAR!" abaixo, "SEM FÔLEGO!" perto de zero. */
+  private checkEnergyAlerts() {
+    const e = Math.round(this.player.energy);
+    const level = e <= ENERGY.criticalAt ? 'critical' : e <= ENERGY.lowAt ? 'low' : e <= ENERGY.warnAt ? 'warn' : 'ok';
+    const rank = { ok: 0, warn: 1, low: 2, critical: 3 } as const;
+    if (rank[level] > rank[this.energyLevel] && level !== 'ok') this.emit({ type: 'energy', level });
+    this.energyLevel = level;
   }
 
   /** Posição (1 ou 2) do jogador na prova. */
@@ -191,7 +230,8 @@ export class RaceEngine {
   }
 
   update(rawDt: number) {
-    const dt = Math.min(rawDt, 0.05);
+    // Aceita quedas de FPS até ~10 quadros/s sem desacelerar o tempo do jogo.
+    const dt = Math.min(rawDt, 0.1);
     this.clock += dt;
     this.stateTime += dt;
 
@@ -271,7 +311,7 @@ export class RaceEngine {
     const before = p.distance;
     p.update(dt, env);
     if (this.kind === 'tutorial') {
-      this.tutorialTick(dt);
+      this.tutorialTick();
       return;
     }
     if (!p.finished && p.distance >= D) {
@@ -362,13 +402,17 @@ export class RaceEngine {
     const avgSpeed = st.raceTime > 0 ? st.speedSum / st.raceTime : 0;
     const breakdown: ScoreBreakdown = {
       velocidade: Math.round(Math.min(1, avgSpeed / 2.4) * 400),
-      ritmo: Math.round(Math.min(1, st.comboTime / Math.max(1, st.raceTime) / 0.8) * 300),
+      // Resistência: tempo com fôlego (energia >= 50%), descontando respirações antecipadas.
+      resistencia: Math.max(
+        0,
+        Math.round((1 - Math.min(1, st.lowEnergyTime / Math.max(1, st.raceTime))) * 300 - st.earlyBreaths * 30),
+      ),
       tecnica: Math.round(
         longStrokes > 0 ? Math.min(1, (st.perfect + st.great * 0.7 + st.good * 0.3) / longStrokes) * 400 : 0,
       ),
       conquista: (won ? 300 : 80) + Math.min(SWIM.comboMax, p.maxCombo) * 20,
     };
-    const score = breakdown.velocidade + breakdown.ritmo + breakdown.tecnica + breakdown.conquista;
+    const score = breakdown.velocidade + breakdown.resistencia + breakdown.tecnica + breakdown.conquista;
     this.result = {
       phase: this.cfg.phase as PhaseId,
       won,
@@ -381,6 +425,7 @@ export class RaceEngine {
       maxCombo: p.maxCombo,
       perfects: st.perfect,
       strokes: st.strokes,
+      breaths: st.breaths,
     };
     this.setState('outro');
   }
@@ -388,44 +433,31 @@ export class RaceEngine {
   // ---------------- Tutorial ----------------
   private tutorialOnStroke(r: StrokeResult) {
     if (this.tutorialDone) return;
+    if (r.zone !== 'green') return;
+    this.tutorialGreen++;
     const step = TUTORIAL_STEPS[this.tutorialStep];
-    switch (step.key) {
-      case 'short':
-        if (r.quality === 'short') this.tutorialCount++;
-        break;
-      case 'long':
-        if (r.long) this.tutorialCount++;
-        break;
-      case 'green':
-        if (r.quality === 'perfect' || r.quality === 'great') this.tutorialCount++;
-        break;
-      case 'combo':
-        this.tutorialCount = r.quality === 'perfect' || r.quality === 'great' ? Math.min(2, Math.max(1, r.combo)) : 0;
-        break;
-    }
+    if (step.key !== 'swim') return;
+    this.tutorialCount++;
     if (this.tutorialCount >= step.need) this.advanceTutorial();
   }
 
-  private tutorialTick(dt: number) {
-    if (this.tutorialDone) return;
-    // A piscina de treino tem fim: chegando na parede, o treino termina.
-    if (this.player.distance >= this.cfg.distance) {
-      this.player.distance = this.cfg.distance;
-      this.player.speed = 0;
-      this.tutorialStep = TUTORIAL_STEPS.length - 1;
-      this.advanceTutorial();
-      return;
-    }
-    this.tutorialStepTime += dt;
+  private tutorialOnBreath(r: BreathResult) {
+    if (this.tutorialDone || !r.valid) return;
+    this.tutorialBreaths++;
     const step = TUTORIAL_STEPS[this.tutorialStep];
-    if (step.key === 'combo' && this.player.combo === 0 && this.tutorialCount > 0) this.tutorialCount = 0;
-    if (this.tutorialStepTime > TUTORIAL_STEP_TIMEOUT) this.advanceTutorial();
+    if (step.key !== 'breath') return;
+    this.tutorialCount++;
+    if (this.tutorialCount >= step.need) this.advanceTutorial();
+  }
+
+  private tutorialTick() {
+    // A piscina de treino é longa; se alguém nadar demais, volta discretamente.
+    if (this.player.distance > 135) this.player.distance -= 100;
   }
 
   private advanceTutorial() {
     this.tutorialStep++;
     this.tutorialCount = 0;
-    this.tutorialStepTime = 0;
     if (this.tutorialStep >= TUTORIAL_STEPS.length) {
       this.tutorialDone = true;
       this.emit({ type: 'tutorialComplete' });

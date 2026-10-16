@@ -23,6 +23,8 @@ export interface SwimmerPose {
   /** Óculos sobre os olhos (nadando) ou na testa. */
   gogglesDown: boolean;
   visible: boolean;
+  /** Respiração em andamento (0 = não, 0..1 = progresso da virada de cabeça). */
+  breathing: number;
 }
 
 export interface SwimmerLook {
@@ -36,24 +38,35 @@ export interface SwimmerLook {
   goggles: string;
   label?: string;
   labelClass?: string;
+  /** 'f' = nadadora de maiô, 'm' = nadador de bermuda. */
+  gender?: 'f' | 'm';
 }
 
-export const PLAYER_LOOK: SwimmerLook = {
-  cap: '#1f6fe5',
-  capStripe: '#ffd23f',
-  capLogo: '#ffffff',
-  suit: '#0b2a6b',
-  suitTrim: '#22d3ee',
-  skin: '#f3c39b',
-  hair: '#5a3420',
-  goggles: '#ffd23f',
-};
+/** Visual do jogador: gênero e cor do traje escolhidos na tela inicial. */
+export function playerLook(gender: 'f' | 'm', suit: string): SwimmerLook {
+  const light = ['#facc15'].includes(suit);
+  return {
+    gender,
+    cap: suit,
+    capStripe: light ? '#0b2a6b' : '#ffffff',
+    capLogo: light ? '#0b2a6b' : '#ffffff',
+    suit,
+    suitTrim: light ? '#0b2a6b' : '#ffffff',
+    skin: gender === 'm' ? '#e9b58f' : '#f3c39b',
+    hair: gender === 'm' ? '#3b2416' : '#5a3420',
+    goggles: light ? '#22d3ee' : '#ffd23f',
+  };
+}
 
+export const PLAYER_LOOK: SwimmerLook = playerLook('f', '#1f6fe5');
+
+/** Fabiola Molina: personagem fixa, sempre de maiô azul. */
 export const FABIOLA_LOOK: SwimmerLook = {
+  gender: 'f',
   cap: '#0b2a6b',
   capStripe: '#ff5d4d',
   capLogo: '#ffffff',
-  suit: '#0a1f52',
+  suit: '#1d4ed8',
   suitTrim: '#ff7b6b',
   skin: '#e8b48c',
   hair: '#2b1a12',
@@ -74,6 +87,7 @@ export function newPose(): SwimmerPose {
     charge: 0,
     gogglesDown: true,
     visible: true,
+    breathing: 0,
   };
 }
 
@@ -190,10 +204,6 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
         if (pose.strokeCount !== a.lastStroke) {
           if (a.lastStroke >= 0) {
             a.target += Math.PI;
-            if (pose.strokeCount % 3 === 0) {
-              a.breathe = 1;
-              a.breatheSide = Math.round(a.target / Math.PI) % 2 ? 1 : -1;
-            }
           } else {
             a.target = Math.ceil(a.phase / Math.PI) * Math.PI;
           }
@@ -222,8 +232,12 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
         a.kick += dt * (7 + pose.speed * 3.5);
         legLa = Math.sin(a.kick) * kickAmp;
         legRa = -Math.sin(a.kick) * kickAmp;
-        a.breathe = Math.max(0, a.breathe - dt * 1.8);
-        headY = Math.sin(a.breathe * Math.PI) * 0.9 * a.breatheSide;
+        // Respiração: vira a cabeça (e o corpo um pouco) para o lado, alternando os lados.
+        if (pose.breathing > 0 && a.breathe === 0) a.breatheSide = -a.breatheSide;
+        a.breathe = pose.breathing;
+        const br = Math.sin(Math.min(1, pose.breathing) * Math.PI);
+        headY = br * 1.15 * a.breatheSide;
+        rollZ += br * 0.45 * a.breatheSide;
         headX = 0.25;
         break;
       }
@@ -346,6 +360,7 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
 
   const shadow = castShadow;
   const { skin, suit, trim, cap, hair, goggle, lens, white, iris, dark, mouth, cheek, logo } = mats;
+  const male = look.gender === 'm';
   const g = geos;
 
   const goggleSet = (
@@ -372,10 +387,11 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
         <group ref={body}>
           <group ref={roll}>
             {/* Tronco */}
-            <mesh geometry={g.torso} material={suit} position={[0, 1.17, 0]} scale={[1.1, 1, 0.82]} castShadow={shadow} />
+            {/* maiô (ela) ou peito à mostra com bermuda (ele) */}
+            <mesh geometry={g.torso} material={male ? skin : suit} position={[0, 1.17, 0]} scale={male ? [1.2, 1, 0.84] : [1.1, 1, 0.82]} castShadow={shadow} />
             <mesh geometry={g.hips} material={suit} position={[0, 0.92, 0]} scale={[1.05, 0.7, 0.85]} castShadow={shadow} />
             <mesh geometry={g.band} material={trim} position={[0, 0.98, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1.08, 0.85, 1]} />
-            <mesh geometry={g.logo} material={logo} position={[0, 1.22, -0.186]} rotation={[0, Math.PI, 0]} />
+            {!male && <mesh geometry={g.logo} material={logo} position={[0, 1.22, -0.186]} rotation={[0, Math.PI, 0]} />}
             {/* Pescoço */}
             <mesh geometry={g.hand} material={skin} position={[0, 1.5, 0]} scale={[1, 1.3, 1]} />
 
@@ -383,10 +399,16 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
             <group ref={head} position={[0, 1.74, 0]}>
               <mesh geometry={g.head} material={skin} castShadow={shadow} />
               <mesh geometry={g.cap} material={cap} rotation={[0.42, 0, 0]} castShadow={shadow} />
-              {/* franjinha */}
-              <mesh geometry={g.pony} material={hair} position={[-0.11, 0.13, -0.235]} scale={[1.1, 0.5, 0.5]} rotation={[0, 0, 0.5]} />
-              {/* Rabo de cavalo */}
-              <group ref={pony} position={[0, -0.02, 0.26]}>
+              {/* franjinha (ela) ou costeletas (ele) */}
+              {male ? (
+                [-1, 1].map((s) => (
+                  <mesh key={s} geometry={g.pony} material={hair} position={[s * 0.27, -0.02, -0.03]} scale={[0.35, 0.7, 0.5]} />
+                ))
+              ) : (
+                <mesh geometry={g.pony} material={hair} position={[-0.11, 0.13, -0.235]} scale={[1.1, 0.5, 0.5]} rotation={[0, 0, 0.5]} />
+              )}
+              {/* Rabo de cavalo (só ela) */}
+              <group ref={pony} position={[0, -0.02, 0.26]} visible={!male}>
                 <mesh geometry={g.pony} material={hair} position={[0, -0.06, 0.05]} scale={[0.9, 1.3, 0.9]} />
                 <mesh geometry={g.pony} material={hair} position={[0, -0.2, 0.08]} scale={[0.75, 1.2, 0.75]} />
                 <mesh geometry={g.pony} material={hair} position={[0, -0.32, 0.08]} scale={[0.5, 0.9, 0.5]} />
@@ -421,7 +443,7 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
               [armR, foreR, -1],
             ].map(([ref, fref, s]) => (
               <group key={s as number} ref={ref as React.RefObject<THREE.Group>} position={[(s as number) * 0.31, SHOULDER_Y, 0]}>
-                <mesh geometry={g.hand} material={suit} scale={[1.25, 1.1, 1.1]} />
+                <mesh geometry={g.hand} material={male ? skin : suit} scale={[1.25, 1.1, 1.1]} />
                 <mesh geometry={g.upperArm} material={skin} position={[0, -0.18, 0]} castShadow={shadow} />
                 <group ref={fref as React.RefObject<THREE.Group>} position={[0, -0.36, 0]}>
                   <mesh geometry={g.joint} material={skin} />
@@ -438,6 +460,8 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
             ].map(([ref, s]) => (
               <group key={s as number} ref={ref as React.RefObject<THREE.Group>} position={[(s as number) * 0.11, 0.86, 0]}>
                 <mesh geometry={g.thigh} material={skin} position={[0, -0.21, 0]} castShadow={shadow} />
+                {/* perna da bermuda */}
+                {male && <mesh geometry={g.thigh} material={suit} position={[0, -0.1, 0]} scale={[1.22, 0.62, 1.22]} />}
                 <mesh geometry={g.joint} material={skin} position={[0, -0.42, 0]} scale={1.1} />
                 <mesh geometry={g.shin} material={skin} position={[0, -0.6, 0]} castShadow={shadow} />
                 <mesh geometry={g.foot} material={skin} position={[0, -0.82, -0.05]} scale={[0.9, 0.6, 1.6]} />
