@@ -1,0 +1,6 @@
+node_modules
+dist
+scripts/.sim.cjs
+*.tsbuildinfo
+scripts/.coupon.cjs
+.claude/
