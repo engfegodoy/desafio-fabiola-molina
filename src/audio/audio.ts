@@ -364,6 +364,11 @@ class AudioEngine {
     this.tone(200, 0.08, { type: 'square', vol: 0.08, when: t + 0.12, slide: 100, filter: 1200 });
   }
 
+  jump() {
+    if (!this.ready) return;
+    this.tone(300, 0.45, { type: 'sine', vol: 0.14, slide: 1400, vibrato: 12, vibratoRate: 9 });
+  }
+
   slip() {
     if (!this.ready) return;
     this.tone(1800, 0.5, { type: 'sine', vol: 0.14, slide: 300 });

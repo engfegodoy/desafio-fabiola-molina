@@ -4,7 +4,7 @@ import { AudioButton, Button, CssBubbles, Logo } from './common';
 
 const FEATURES = [
   { icon: '⚡', title: 'VELOCIDADE', text: 'Reaja no tempo certo', bg: 'from-sky-400 to-blue-600' },
-  { icon: '❤️', title: 'RESISTÊNCIA', text: 'Mantenha seu ritmo', bg: 'from-pink-400 to-rose-600' },
+  { icon: '🎵', title: 'RITMO', text: 'Mantenha o combo', bg: 'from-pink-400 to-rose-600' },
   { icon: '⭐', title: 'TÉCNICA', text: 'Braçadas perfeitas', bg: 'from-yellow-300 to-amber-500' },
   { icon: '🏆', title: 'CONQUISTA', text: 'Complete cada fase', bg: 'from-cyan-300 to-teal-500' },
 ];

@@ -26,10 +26,11 @@ interface DriveState {
   y: number;
   wake: number;
   diveSplash: boolean;
+  introSplash: boolean;
 }
 
 function makeDrive(engine: RaceEngine, who: 'player' | 'opponent') {
-  const st: DriveState = { y: 0, wake: 0, diveSplash: false };
+  const st: DriveState = { y: 0, wake: 0, diveSplash: false, introSplash: false };
   const isPool = engine.kind === 'pool' || engine.kind === 'tutorial';
   const ambient = engine.cfg.waves.ambient;
   const D = engine.cfg.distance;
@@ -76,31 +77,57 @@ function makeDrive(engine: RaceEngine, who: 'player' | 'opponent') {
     // ---------- Fase do tubarão (jogadora sozinha) ----------
     if (engine.kind === 'shark') {
       if (state === 'intro') {
+        // Cena: comemora no barco → pulo de cabeça na água → olha para trás,
+        // vê o tubarão → vira para a praia e a prova começa.
         const deck = new THREE.Vector3(2.35, 0.82, 0.6);
-        pose.yaw = -2.2;
-        if (k < 2.8) {
+        const faceCam = -2.2;
+        const faceJump = -Math.PI * 1.5; // olhando para -X (lado do mar livre)
+        if (k < 2.6) {
           pose.anim = 'dance';
           pose.prone = 0;
           pose.gogglesDown = false;
+          pose.yaw = faceCam;
           pose.pos.copy(deck);
-        } else if (k < 3.5) {
-          const a = smooth((k - 2.8) / 0.7);
-          pose.anim = 'slip';
+        } else if (k < 3.0) {
+          // agacha e se prepara para o pulo
+          const a = smooth((k - 2.6) / 0.4);
+          pose.anim = 'stand';
           pose.prone = 0;
-          pose.spin = -a * 1.3;
-          pose.pos.set(deck.x - a * 0.9, deck.y + Math.sin(a * Math.PI) * 0.5, deck.z);
-        } else if (k < 4.3) {
-          const a = (k - 3.5) / 0.8;
-          pose.anim = 'slip';
+          pose.gogglesDown = true;
+          pose.yaw = THREE.MathUtils.lerp(faceCam, faceJump, a);
+          pose.pos.set(deck.x, deck.y - Math.sin(a * Math.PI * 0.5) * 0.18, deck.z);
+        } else if (k < 3.9) {
+          // pulo em arco, bem por cima da borda do barco, caindo de cabeça
+          const a = (k - 3.0) / 0.9;
+          pose.anim = 'jump';
           pose.prone = 0;
-          pose.spin = -1.3 - a * 1.6;
-          pose.pos.set(THREE.MathUtils.lerp(1.45, 0, a), THREE.MathUtils.lerp(1.25, -1.6, a) + Math.sin(a * Math.PI) * 1.2, THREE.MathUtils.lerp(0.6, 0, a));
-          st.y = pose.pos.y;
+          pose.gogglesDown = true;
+          pose.yaw = faceJump;
+          pose.spin = -smooth(a) * Math.PI * 0.85;
+          pose.pos.set(
+            THREE.MathUtils.lerp(deck.x, -0.2, a),
+            THREE.MathUtils.lerp(deck.y, -0.6, a) + Math.sin(a * Math.PI) * 2.1,
+            THREE.MathUtils.lerp(deck.z, 0, a),
+          );
+          st.y = -2.2;
+          if (!st.introSplash && a > 0.92) {
+            st.introSplash = true;
+            splashBus.burst(-0.2, 0.05, 0, 1.4, 50);
+            splashBus.ripple(-0.2, 0, 0, 2.2);
+          }
         } else {
-          pose.yaw = k < 5.3 ? -2.2 : k < 6.5 ? Math.PI : THREE.MathUtils.lerp(Math.PI, 0, smooth((k - 6.5) / 0.6));
-          if (k < 5) st.y = THREE.MathUtils.lerp(-2.4, h + TREAD_Y, smooth((k - 4.3) / 0.7));
+          // sobe, olha para trás (tubarão!) e vira para a praia
+          if (k < 4.6) st.y = THREE.MathUtils.lerp(-2.2, h + TREAD_Y, smooth((k - 3.9) / 0.7));
           tread();
-          pose.gogglesDown = k > 6.4;
+          pose.gogglesDown = true;
+          pose.yaw =
+            k < 4.8
+              ? 0
+              : k < 5.4
+                ? THREE.MathUtils.lerp(0, Math.PI, smooth((k - 4.8) / 0.6))
+                : k < 6.0
+                  ? Math.PI
+                  : THREE.MathUtils.lerp(Math.PI, 0, smooth((k - 6.0) / 0.5));
           pose.pos.set(0, st.y, 0);
         }
         return;
@@ -216,13 +243,13 @@ function makeSharkDrive(engine: RaceEngine) {
     pose.swim = 0.5 + sh.speed * 0.4;
     pose.grumpy = 0;
     if (state === 'intro') {
-      if (k < 4.6) {
+      if (k < 4.5) {
         pose.visible = false;
         y = -2.6;
       } else {
-        targetY = k < 5.6 ? THREE.MathUtils.lerp(-2.6, h - 0.42, smooth((k - 4.6) / 1)) : h - 0.42;
+        targetY = k < 5.3 ? THREE.MathUtils.lerp(-2.6, h - 0.42, smooth((k - 4.5) / 0.8)) : h - 0.42;
         y = targetY;
-        mouth = k > 5.6 ? 0.9 + Math.sin(t * 12) * 0.08 : 0.2;
+        mouth = k > 5.3 ? 0.9 + Math.sin(t * 12) * 0.08 : 0.2;
       }
     } else if (state === 'countdown') {
       mouth = 0.5 + Math.sin(t * 3) * 0.3;
@@ -292,7 +319,7 @@ function CameraRig({ engine }: { engine: RaceEngine }) {
       sideK.current += (target - sideK.current) * Math.min(1, dt * 1.5);
       const k2 = smooth(sideK.current);
       const back = portrait ? 8.2 : 7;
-      tmpP.set(px + 1.6, portrait ? 4.6 : 3.9, pz + back);
+      tmpP.set(px - 1.5, portrait ? 4.6 : 3.9, pz + back);
       tmpL.set(0, 0, pz - 4);
       tmpP.lerp(new THREE.Vector3(px + (portrait ? 9 : 7.5), 3.8, pz + gap * 0.5 + 1.2), k2);
       tmpL.lerp(new THREE.Vector3(0, 0.3, pz + gap * 0.45), k2);
@@ -300,17 +327,20 @@ function CameraRig({ engine }: { engine: RaceEngine }) {
     if (isShark) {
       if (s === 'intro') {
         lerpK = 2.4;
-        if (k < 3.5) {
+        if (k < 3.0) {
           tmpP.set(6.8, 2.6, 5.4);
           tmpL.set(2.2, 1.4, 0.6);
-        } else if (k < 4.6) {
-          tmpP.set(6.5, 3, 5.5);
-          tmpL.set(0.6, 0, 0.4);
+        } else if (k < 4.5) {
+          tmpP.set(7.5, 3.6, 7);
+          tmpL.set(0.9, 0.9, 0.3);
+        } else if (k < 6.0) {
+          // por cima do ombro dela: vemos a nadadora olhando o tubarão chegando
+          tmpP.set(-2.4, 2.6, -5.2);
+          tmpL.set(0.4, 0.1, 6);
         } else {
-          tmpP.set(11.5, 4.6, 6.8);
-          tmpL.set(0, 0.2, 6.6);
+          sharkFollow();
         }
-        if (portrait) tmpP.multiplyScalar(1.25);
+        if (portrait && k < 6.0) tmpP.multiplyScalar(1.25);
       } else if (s === 'countdown' || s === 'racing' || s === 'finishing') {
         sharkFollow();
       } else if (engine.outcome === 'escaped') {

@@ -11,19 +11,16 @@ interface Bot {
   /** Desvio-padrão (s) do erro humano ao soltar. */
   sigma: number;
   pause: number;
-  restBelow: number;
-  restUntil: number;
-  waveSmart: boolean;
   spam?: boolean;
 }
 
 const BOTS: Bot[] = [
-  { name: 'craque', sigma: 0.03, pause: 0.1, restBelow: 26, restUntil: 62, waveSmart: true },
-  { name: 'bom', sigma: 0.055, pause: 0.14, restBelow: 25, restUntil: 60, waveSmart: false },
-  { name: 'médio', sigma: 0.09, pause: 0.2, restBelow: 18, restUntil: 50, waveSmart: false },
-  { name: 'iniciante', sigma: 0.14, pause: 0.25, restBelow: 10, restUntil: 40, waveSmart: false },
-  { name: 'sem-descanso', sigma: 0.03, pause: 0.1, restBelow: -1, restUntil: 0, waveSmart: false },
-  { name: 'só-toques', sigma: 0, pause: 0.12, restBelow: -1, restUntil: 0, waveSmart: false, spam: true },
+  { name: 'craque', sigma: 0.03, pause: 0.1 },
+  { name: 'bom', sigma: 0.055, pause: 0.14 },
+  { name: 'médio', sigma: 0.09, pause: 0.2 },
+  { name: 'iniciante', sigma: 0.14, pause: 0.25 },
+  { name: 'só-toques', sigma: 0, pause: 0.12, spam: true },
+  { name: 'toques-ritmo', sigma: 0, pause: 0.34, spam: true },
 ];
 
 function gauss() {
@@ -37,7 +34,7 @@ function gauss() {
 function runOnce(kind: StageKind, bot: Bot) {
   const eng = new RaceEngine(kind);
   const dt = 1 / 60;
-  let mode: 'wait' | 'hold' | 'rest' = 'wait';
+  let mode: 'wait' | 'hold' = 'wait';
   let timer = 0;
   let releaseAt = 0;
   let guard = 0;
@@ -48,10 +45,7 @@ function runOnce(kind: StageKind, bot: Bot) {
       if (mode === 'wait') {
         timer -= dt;
         if (timer <= 0) {
-          const warn = eng.warning;
-          if (p.energy < bot.restBelow) mode = 'rest';
-          else if (bot.waveSmart && warn && warn.kind === 'front' && warn.inside > 0.45 && p.energy < 80) timer = 0.2;
-          else {
+          {
             eng.press();
             mode = 'hold';
             const center = ((bar.greenStart + bar.greenEnd) / 2) * bar.chargeTime;
@@ -64,8 +58,6 @@ function runOnce(kind: StageKind, bot: Bot) {
           mode = 'wait';
           timer = bot.pause * (0.7 + Math.random() * 0.6);
         }
-      } else if (mode === 'rest') {
-        if (p.energy >= bot.restUntil) mode = 'wait';
       }
     }
     eng.update(dt);

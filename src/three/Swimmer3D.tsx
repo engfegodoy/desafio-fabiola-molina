@@ -4,7 +4,7 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { capTexture, chestLogoTexture } from './textures';
 
-export type SwimAnim = 'swim' | 'stand' | 'celebrate' | 'wave' | 'tread' | 'cheerWater' | 'tossed' | 'dance' | 'slip';
+export type SwimAnim = 'swim' | 'stand' | 'celebrate' | 'wave' | 'tread' | 'cheerWater' | 'tossed' | 'dance' | 'slip' | 'jump';
 
 /** Estado visual preenchido a cada quadro por quem controla a nadadora. */
 export interface SwimmerPose {
@@ -276,6 +276,16 @@ export function Swimmer3D({ look, drive, castShadow = true, scale = 1, labelHeig
           armLa = 1.4 + Math.sin(t * 10) * 0.8;
           armRa = 1.4 - Math.sin(t * 10) * 0.8;
         }
+        break;
+      }
+      case 'jump': {
+        // braços esticados acima da cabeça, pernas juntas (mergulho)
+        armLa = Math.PI - 0.08;
+        armRa = Math.PI - 0.08;
+        armLz = 0.12;
+        armRz = -0.12;
+        legLa = 0.05;
+        legRa = 0.05;
         break;
       }
       case 'slip':

@@ -33,7 +33,6 @@ export const CALM_ENV: SwimEnv = { dragMul: 1, push: 0, strokeMul: 1 };
 export class Swimmer {
   distance = 0;
   speed = 0;
-  energy = SWIM.energyMax;
   combo = 0;
   maxCombo = 0;
   charging = false;
@@ -60,7 +59,7 @@ export class Swimmer {
     early: 0,
     passed: 0,
     short: 0,
-    lowEnergyTime: 0,
+    comboTime: 0,
     raceTime: 0,
     speedSum: 0,
   };
@@ -73,13 +72,6 @@ export class Swimmer {
   /** Carga atual da barra (0..1). */
   get charge(): number {
     return this.charging ? Math.min(1, this.chargeTime / this.bar.chargeTime) : 0;
-  }
-
-  get energyEfficiency(): number {
-    const e = this.energy;
-    if (e >= SWIM.energyLowThreshold) return 1;
-    const k = e / SWIM.energyLowThreshold;
-    return SWIM.energyEmptyEfficiency + (1 - SWIM.energyEmptyEfficiency) * k;
   }
 
   get comboMultiplier(): number {
@@ -131,18 +123,15 @@ export class Swimmer {
     let quality: StrokeQuality;
     let qualityEff: number;
     let base: number;
-    let cost: number;
     if (!long) {
       quality = 'short';
       qualityEff = 1;
       base = SWIM.shortPower;
-      cost = SWIM.energyCostShort;
     } else {
       const c = this.classify(charge);
       quality = c.quality;
       qualityEff = c.eff;
       base = SWIM.longPower;
-      cost = SWIM.energyCostLongBase + SWIM.energyCostLongExtra * charge;
     }
 
     // Ritmo: braçadas atropeladas rendem menos.
@@ -168,12 +157,11 @@ export class Swimmer {
     this.maxCombo = Math.max(this.maxCombo, this.combo);
 
     const efficiency =
-      qualityEff * rhythm * this.energyEfficiency * this.comboMultiplier * env.strokeMul * this.power;
+      qualityEff * rhythm * this.comboMultiplier * env.strokeMul * this.power;
     const impulse = base * efficiency;
 
     this.thrustLeft = SWIM.thrustTime;
     this.thrustAccel = this.thrustAccel * 0.3 + impulse / SWIM.thrustTime;
-    this.energy = Math.max(0, this.energy - cost);
     this.sinceStroke = 0;
     this.strokeCount++;
     this.lastStrokePower = long ? Math.min(1.3, efficiency) : 0.35;
@@ -193,12 +181,6 @@ export class Swimmer {
       this.combo = 0;
     }
 
-    // Energia
-    let regen = SWIM.energyRegenPassive;
-    if (!this.charging && this.sinceStroke > SWIM.restDelay) regen += SWIM.energyRegenRest;
-    if (this.charging) regen = SWIM.energyRegenPassive * 0.5;
-    this.energy = Math.min(SWIM.energyMax, this.energy + regen * dt);
-
     // Física
     let accel = env.push;
     if (this.thrustLeft > 0) {
@@ -215,7 +197,7 @@ export class Swimmer {
     if (!this.finished) {
       this.stats.raceTime += dt;
       this.stats.speedSum += this.speed * dt;
-      if (this.energy < SWIM.energyLowThreshold) this.stats.lowEnergyTime += dt;
+      if (this.combo >= 2) this.stats.comboTime += dt;
     }
   }
 }

@@ -27,7 +27,7 @@ Depois abra `http://localhost:5173`. No Replit, o botão **Run** já executa `np
 
 | Pasta | Conteúdo |
 |---|---|
-| `src/config/balance.ts` | **Todos os parâmetros de dificuldade** (velocidades, potência, barra de força, energia, combo, ondas, Fabiola, tubarão, distâncias) |
+| `src/config/balance.ts` | **Todos os parâmetros de dificuldade** (velocidades, potência, barra de força, combo, ondas, Fabiola, tubarão, distâncias) |
 | `src/game/` | Motor puro (sem React): física do nadador, IA da Fabiola, tubarão, ondas, prova, tutorial e cupons |
 | `src/store/` | Estado global (Zustand): tela, fase, nome, resultados, áudio |
 | `src/three/` | Personagens 3D, água em shader, respingos, cenários (piscina, mar dia/noite, praia), câmera |

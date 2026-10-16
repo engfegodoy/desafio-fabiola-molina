@@ -221,15 +221,6 @@ export function Boat({ position }: { position: [number, number, number] }) {
         <torusGeometry args={[0.35, 0.11, 10, 20]} />
         <meshStandardMaterial color="#ff5d4d" />
       </mesh>
-      {/* casca de banana (o motivo da queda!) */}
-      <group position={[0.7, 0.5, -0.4]} rotation={[0, 0.6, 0]}>
-        {[0, 1, 2].map((i) => (
-          <mesh key={i} rotation={[0, (i * Math.PI * 2) / 3, 1.2]} position={[0, 0.02, 0]}>
-            <capsuleGeometry args={[0.04, 0.18, 2, 6]} />
-            <meshStandardMaterial color="#ffd23f" />
-          </mesh>
-        ))}
-      </group>
     </group>
   );
 }

@@ -8,7 +8,7 @@ export type Outcome = 'win' | 'lose' | 'escaped' | 'caught';
 
 export interface ScoreBreakdown {
   velocidade: number;
-  resistencia: number;
+  ritmo: number;
   tecnica: number;
   conquista: number;
 }
@@ -43,12 +43,14 @@ export type EngineEvent =
 type Listener = (e: EngineEvent) => void;
 
 export const TUTORIAL_STEPS = [
-  { key: 'short', need: 2 },
+  { key: 'short', need: 1 },
   { key: 'long', need: 1 },
   { key: 'green', need: 1 },
-  { key: 'combo', need: 3 },
-  { key: 'rest', need: 1 },
+  { key: 'combo', need: 2 },
 ] as const;
+
+/** Se o jogador demorar neste tempo (s) em um passo, o treino segue sozinho. */
+export const TUTORIAL_STEP_TIMEOUT = 15;
 
 /**
  * Motor da prova. Puro (sem React/Three), atualizado a cada quadro.
@@ -81,6 +83,7 @@ export class RaceEngine {
   // Tutorial
   tutorialStep = 0;
   tutorialCount = 0;
+  tutorialStepTime = 0;
   tutorialDone = false;
 
   constructor(kind: StageKind, seed = Math.floor(Math.random() * 1e9)) {
@@ -214,8 +217,15 @@ export class RaceEngine {
     switch (this.state) {
       case 'intro':
         if (this.stateTime >= this.introDuration) {
-          this.setState('countdown');
-          this.countdownShown = 4;
+          if (this.kind === 'shark') {
+            // Depois de ver o tubarão, a fuga começa na hora: "NADE!"
+            this.setState('racing');
+            this.time = 0;
+            this.emit({ type: 'countdown', n: 0 });
+          } else {
+            this.setState('countdown');
+            this.countdownShown = 4;
+          }
         }
         break;
       case 'countdown': {
@@ -261,7 +271,7 @@ export class RaceEngine {
     const before = p.distance;
     p.update(dt, env);
     if (this.kind === 'tutorial') {
-      this.tutorialTick();
+      this.tutorialTick(dt);
       return;
     }
     if (!p.finished && p.distance >= D) {
@@ -352,13 +362,13 @@ export class RaceEngine {
     const avgSpeed = st.raceTime > 0 ? st.speedSum / st.raceTime : 0;
     const breakdown: ScoreBreakdown = {
       velocidade: Math.round(Math.min(1, avgSpeed / 2.4) * 400),
-      resistencia: Math.round((1 - Math.min(1, st.lowEnergyTime / Math.max(1, st.raceTime))) * 300),
+      ritmo: Math.round(Math.min(1, st.comboTime / Math.max(1, st.raceTime) / 0.8) * 300),
       tecnica: Math.round(
         longStrokes > 0 ? Math.min(1, (st.perfect + st.great * 0.7 + st.good * 0.3) / longStrokes) * 400 : 0,
       ),
       conquista: (won ? 300 : 80) + Math.min(SWIM.comboMax, p.maxCombo) * 20,
     };
-    const score = breakdown.velocidade + breakdown.resistencia + breakdown.tecnica + breakdown.conquista;
+    const score = breakdown.velocidade + breakdown.ritmo + breakdown.tecnica + breakdown.conquista;
     this.result = {
       phase: this.cfg.phase as PhaseId,
       won,
@@ -390,35 +400,36 @@ export class RaceEngine {
         if (r.quality === 'perfect' || r.quality === 'great') this.tutorialCount++;
         break;
       case 'combo':
-        this.tutorialCount = r.quality === 'perfect' || r.quality === 'great' ? Math.min(3, r.combo) : 0;
-        break;
-      case 'rest':
+        this.tutorialCount = r.quality === 'perfect' || r.quality === 'great' ? Math.min(2, Math.max(1, r.combo)) : 0;
         break;
     }
     if (this.tutorialCount >= step.need) this.advanceTutorial();
   }
 
-  private tutorialTick() {
-    // Piscina de treino tem fim: volta discretamente para o começo.
-    if (this.player.distance > 120) this.player.distance -= 90;
+  private tutorialTick(dt: number) {
     if (this.tutorialDone) return;
+    // A piscina de treino tem fim: chegando na parede, o treino termina.
+    if (this.player.distance >= this.cfg.distance) {
+      this.player.distance = this.cfg.distance;
+      this.player.speed = 0;
+      this.tutorialStep = TUTORIAL_STEPS.length - 1;
+      this.advanceTutorial();
+      return;
+    }
+    this.tutorialStepTime += dt;
     const step = TUTORIAL_STEPS[this.tutorialStep];
     if (step.key === 'combo' && this.player.combo === 0 && this.tutorialCount > 0) this.tutorialCount = 0;
-    if (step.key === 'rest') {
-      if (this.player.energy >= 75) this.advanceTutorial();
-    }
+    if (this.tutorialStepTime > TUTORIAL_STEP_TIMEOUT) this.advanceTutorial();
   }
 
   private advanceTutorial() {
     this.tutorialStep++;
     this.tutorialCount = 0;
+    this.tutorialStepTime = 0;
     if (this.tutorialStep >= TUTORIAL_STEPS.length) {
       this.tutorialDone = true;
       this.emit({ type: 'tutorialComplete' });
       return;
-    }
-    if (TUTORIAL_STEPS[this.tutorialStep].key === 'rest') {
-      this.player.energy = 22;
     }
     this.emit({ type: 'tutorialStep', step: this.tutorialStep });
   }

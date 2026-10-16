@@ -10,7 +10,7 @@ import { Confetti } from './Confetti';
 
 const PHASE_TAG: Record<string, { tag: string; emoji: string; goal: string }> = {
   pool: { tag: 'FASE 1', emoji: '🏊‍♀️', goal: 'Vença a Fabiola Molina nos 50 metros!' },
-  seaDay: { tag: 'FASE 2', emoji: '☀️', goal: 'Aproveite as ondas a favor e poupe energia nas ondas contra!' },
+  seaDay: { tag: 'FASE 2', emoji: '☀️', goal: 'Acelere nas ondas a favor e mantenha o ritmo nas ondas contra!' },
   seaNight: { tag: 'FASE 3', emoji: '🌙', goal: 'Ondas fortes e timing exigente. A Fabiola está voando!' },
   shark: { tag: 'FASE 4', emoji: '🦈', goal: 'Nade até a areia antes do tubarão!' },
 };
@@ -49,15 +49,15 @@ function StageOverlay({ engine }: { engine: RaceEngine }) {
       )}
       {s === 'intro' && isShark && (
         <div className="absolute top-[18%] flex flex-col items-center px-4 text-center">
-          {k < 2.9 && (
+          {k < 2.6 && (
             <>
               <div className="font-display text-stroke anim-pop text-4xl text-sun-400 sm:text-6xl">QUE FESTA! 🎉</div>
               <div className="font-display text-stroke-thin mt-1 text-xl text-white sm:text-2xl">Você completou as provas!</div>
             </>
           )}
-          {k >= 2.9 && k < 4.6 && <div className="font-display text-stroke anim-pop text-5xl text-white sm:text-7xl">OPS!!! 🍌</div>}
-          {k >= 4.6 && k < 6.2 && <div className="font-display text-stroke anim-shake text-5xl text-coral-400 sm:text-7xl">UM TUBARÃO!!! 🦈</div>}
-          {k >= 6.2 && (
+          {k >= 2.6 && k < 4.5 && <div className="font-display text-stroke anim-pop text-5xl text-white sm:text-7xl">TCHIBUM! 🤸</div>}
+          {k >= 4.5 && k < 6.0 && <div className="font-display text-stroke anim-pop text-5xl text-coral-400 sm:text-7xl">UM TUBARÃO!!! 🦈</div>}
+          {k >= 6.0 && (
             <>
               <div className="ribbon mb-2">{info.tag} • FUGA DO TUBARÃO</div>
               <div className="font-display text-stroke anim-pop text-4xl text-sun-400 sm:text-6xl">NADE ATÉ A PRAIA!</div>
@@ -65,7 +65,7 @@ function StageOverlay({ engine }: { engine: RaceEngine }) {
           )}
         </div>
       )}
-      {isShark && s === 'intro' && k < 2.9 && <Confetti active duration={2.6} />}
+      {isShark && s === 'intro' && k < 2.6 && <Confetti active duration={2.4} />}
       {count !== null && (
         <div key={count} className="font-display text-stroke anim-countdown text-[28vw] leading-none text-sun-400 sm:text-[180px]">
           {count > 0 ? count : isShark ? 'NADE!' : 'VAI!'}
@@ -116,7 +116,7 @@ function OutroText({ engine }: { engine: RaceEngine }) {
 function ScoreChips({ r }: { r: PhaseResult }) {
   const items = [
     { icon: '⚡', label: 'Velocidade', v: r.breakdown.velocidade, bg: 'from-sky-400 to-blue-600' },
-    { icon: '❤️', label: 'Resistência', v: r.breakdown.resistencia, bg: 'from-pink-400 to-rose-600' },
+    { icon: '🎵', label: 'Ritmo', v: r.breakdown.ritmo, bg: 'from-pink-400 to-rose-600' },
     { icon: '⭐', label: 'Técnica', v: r.breakdown.tecnica, bg: 'from-yellow-300 to-amber-500' },
     { icon: '🏆', label: 'Conquista', v: r.breakdown.conquista, bg: 'from-cyan-300 to-teal-500' },
   ];

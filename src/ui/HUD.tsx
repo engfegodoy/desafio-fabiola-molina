@@ -85,35 +85,7 @@ export function PowerBar({ engine, compact = false }: { engine: RaceEngine; comp
   );
 }
 
-/* ===================== Energia e combo ===================== */
-export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; highlight?: boolean }) {
-  const p = engine.player;
-  const e = Math.round(p.energy);
-  const low = p.energy < SWIM.energyLowThreshold;
-  return (
-    <div className={`hud-card px-3 pb-2 pt-1.5 ${highlight ? 'anim-glow ring-4 ring-sun-400' : ''}`}>
-      <div className="font-display flex items-center justify-between text-[11px] uppercase text-white/90 sm:text-xs">
-        <span>Energia</span>
-        <span className={low ? 'anim-danger text-coral-400' : ''}>{e}</span>
-      </div>
-      <div className="mt-1 flex items-center gap-1.5">
-        <span className="text-base">⚡</span>
-        <div className="relative h-4 flex-1 overflow-hidden rounded-full border-2 border-white/80 bg-navy-900 sm:h-5">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-100"
-            style={{
-              width: `${p.energy}%`,
-              background: low ? 'linear-gradient(90deg,#ff3b3b,#ff9a3d)' : 'linear-gradient(90deg,#22d3ee,#3df5ff)',
-              boxShadow: low ? '' : '0 0 10px rgba(60,240,255,0.7)',
-            }}
-          />
-          <div className="absolute inset-y-0 border-l-2 border-dashed border-white/50" style={{ left: `${SWIM.energyLowThreshold}%` }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/* ===================== Combo ===================== */
 export function ComboBox({ engine }: { engine: RaceEngine }) {
   const c = engine.player.combo;
   const active = c >= 2;
@@ -151,7 +123,6 @@ const QUALITY_MSG: Record<string, { text: string; color: string; size: number }>
 export function Feedback({ engine }: { engine: RaceEngine }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const idRef = useRef(0);
-  const lowWarned = useRef(false);
   const push = (text: string, color: string, size: number) => {
     const id = ++idRef.current;
     setMsgs((m) => [...m.slice(-2), { id, text, color, size }]);
@@ -165,19 +136,9 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
         const n = e.result.combo;
         push(n >= SWIM.comboMax ? `COMBO x${n}! MÁXIMO!` : `COMBO x${n}!`, '#ffd23f', 28 + n * 2);
       }
-      if (engine.player.energy < 22 && !lowWarned.current) {
-        lowWarned.current = true;
-        push('ENERGIA BAIXA! DESCANSE', '#ff9a3d', 22);
-      }
     }
     if (e.type === 'comboLost') push('COMBO PERDIDO', '#c8d3e6', 18);
   });
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (engine.player.energy > 55) lowWarned.current = false;
-    }, 300);
-    return () => clearInterval(id);
-  }, [engine]);
   return (
     <div className="pointer-events-none absolute right-11 top-[34%] z-20 flex flex-col items-end gap-1 sm:right-24 md:right-28">
       {msgs.map((m) => (
@@ -234,7 +195,7 @@ export function ProgressRail({ engine }: { engine: RaceEngine }) {
 }
 
 /* ===================== HUD principal ===================== */
-export function HUD({ engine, tutorial = false, energyHighlight = false }: { engine: RaceEngine; tutorial?: boolean; energyHighlight?: boolean }) {
+export function HUD({ engine, tutorial = false }: { engine: RaceEngine; tutorial?: boolean }) {
   useTicker(15);
   const name = useGame((s) => s.playerName);
   const phase = useGame((s) => s.phase);
@@ -274,9 +235,9 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
               <div className="font-display text-xl tabular-nums sm:text-3xl">{formatTime(engine.time)}</div>
             </div>
           )}
-          {!isShark && !tutorial && showRace && (
+          {!isShark && showRace && (
             <div className="font-display rounded-full bg-navy-800/70 px-3 py-0.5 text-xs text-white">
-              {Math.max(0, D - p.distance).toFixed(0)} m para a chegada
+              {Math.max(0, D - p.distance).toFixed(0)} m {tutorial ? 'até o fim do treino' : 'para a chegada'}
             </div>
           )}
         </div>
@@ -304,7 +265,7 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
           >
             {w.inside > 0.35 || w.distance < 0.6
               ? w.kind === 'front'
-                ? '🌊 ONDA CONTRA! POUPE ENERGIA'
+                ? '🌊 ONDA CONTRA! ÁGUA MAIS PESADA'
                 : '🌊 ONDA A FAVOR! NADE AGORA!'
               : w.kind === 'front'
                 ? `⬇ ONDA DE FRENTE EM ${w.distance.toFixed(0)} m`
@@ -317,24 +278,17 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
 
       {/* base */}
       <div className="safe-pad absolute inset-x-0 bottom-0">
-        <div className="mx-auto flex max-w-4xl flex-col gap-1.5 sm:flex-row sm:items-stretch sm:gap-2">
+        <div className="mx-auto flex max-w-4xl items-stretch gap-1.5 sm:gap-2">
           <div className="hud-card hidden w-44 shrink-0 flex-col justify-center px-3 py-1.5 lg:flex">
             <div className="font-display text-xs text-sun-300">TOQUE / ESPAÇO</div>
             <div className="text-[11px] font-bold leading-tight text-white/90">
               Rápido = braçada curta. Segure e solte no <span className="text-[#3df58a]">verde</span>!
             </div>
           </div>
-          <div className="flex gap-1.5 sm:contents">
-            <div className="flex-1 sm:order-2 sm:w-44 sm:flex-none">
-              <EnergyBar engine={engine} highlight={energyHighlight} />
-            </div>
-            <div className="sm:order-3">
-              <ComboBox engine={engine} />
-            </div>
-          </div>
-          <div className="sm:order-1 sm:flex-1">
+          <div className="min-w-0 flex-1">
             <PowerBar engine={engine} />
           </div>
+          <ComboBox engine={engine} />
         </div>
       </div>
     </div>

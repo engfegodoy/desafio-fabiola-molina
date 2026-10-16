@@ -132,7 +132,7 @@ function Bunting({ z, width }: { z: number; width: number }) {
   const colors = ['#ff5d4d', '#ffd23f', '#22d3ee', '#1f6fe5', '#ffffff'];
   const n = 16;
   return (
-    <group position={[0, 2.4, z]}>
+    <group position={[0, 3.7, z]}>
       <mesh rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.012, 0.012, width, 4]} />
         <meshBasicMaterial color="#ffffff" />
@@ -148,8 +148,8 @@ function Bunting({ z, width }: { z: number; width: number }) {
         );
       })}
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * (width / 2), -1.2, 0]}>
-          <cylinderGeometry args={[0.05, 0.05, 2.5, 8]} />
+        <mesh key={s} position={[s * (width / 2), -1.7, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 3.4, 8]} />
           <meshStandardMaterial color="#d0d8e0" metalness={0.6} roughness={0.3} />
         </mesh>
       ))}
@@ -255,23 +255,23 @@ export function PoolScene({ length, crowd, quality, lanes = 2 }: { length: numbe
       <PoolFloor length={length + 0.9} lanes={layout.centers.map((c) => c + layout.offsetX)} halfWidth={HW} />
       {/* paredes internas */}
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * HW, -POOL.depth / 2 + 0.15, centerZ]} rotation={[0, -s * Math.PI / 2, 0]}>
+        <mesh key={s} position={[s * (HW - 0.03), -POOL.depth / 2 + 0.15, centerZ]} rotation={[0, -s * Math.PI / 2, 0]}>
           <planeGeometry args={[totalLen, POOL.depth + 0.3]} />
           <meshStandardMaterial color="#5cc8e6" roughness={0.3} />
         </mesh>
       ))}
-      <mesh position={[0, -POOL.depth / 2 + 0.15, POOL.startWall]} rotation={[0, Math.PI, 0]}>
+      <mesh position={[0, -POOL.depth / 2 + 0.15, POOL.startWall - 0.03]} rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[HW * 2, POOL.depth + 0.3]} />
         <meshStandardMaterial color="#5cc8e6" roughness={0.3} />
       </mesh>
-      <mesh position={[0, -POOL.depth / 2 + 0.15, endZ]}>
+      <mesh position={[0, -POOL.depth / 2 + 0.15, endZ + 0.03]}>
         <planeGeometry args={[HW * 2, POOL.depth + 0.3]} />
         <meshStandardMaterial color="#5cc8e6" roughness={0.3} />
       </mesh>
       {/* placas de toque na chegada */}
       {crowd &&
         layout.centers.map((x) => (
-          <mesh key={x} position={[x, -0.25, endZ + 0.05]}>
+          <mesh key={x} position={[x, -0.25, endZ + 0.08]}>
             <boxGeometry args={[2.2, 0.9, 0.08]} />
             <meshStandardMaterial color="#ffd23f" emissive="#ffb000" emissiveIntensity={0.25} />
           </mesh>
@@ -284,7 +284,7 @@ export function PoolScene({ length, crowd, quality, lanes = 2 }: { length: numbe
           <meshStandardMaterial map={deckTex} roughness={0.5} />
         </mesh>
       ))}
-      <mesh position={[0, POOL.deckY / 2 - 0.5, POOL.startWall + 4.5]} receiveShadow>
+      <mesh position={[0, POOL.deckY / 2 - 0.5, POOL.startWall + 2.75]} receiveShadow>
         <boxGeometry args={[HW * 2, POOL.deckY + 1, 5.5]} />
         <meshStandardMaterial map={deckTex} roughness={0.5} />
       </mesh>
@@ -365,7 +365,7 @@ export function PoolScene({ length, crowd, quality, lanes = 2 }: { length: numbe
           {Array.from({ length: Math.ceil(standLen / 8) }, (_, i) => {
             const tex = [adA, adB, adC][i % 3];
             return (
-              <mesh key={i} position={[s * (S0 - 0.62), 0.85, POOL.startWall + 10 - 4 - i * 8]} rotation={[0, -s * Math.PI / 2, 0]}>
+              <mesh key={i} position={[s * (S0 - 0.75), 0.85, POOL.startWall + 10 - 4 - i * 8]} rotation={[0, -s * Math.PI / 2, 0]}>
                 <planeGeometry args={[7.8, 1.1]} />
                 <meshBasicMaterial map={tex} toneMapped={false} />
               </mesh>

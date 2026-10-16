@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TUTORIAL_STEPS, type RaceEngine } from '../game/raceEngine';
+import { TUTORIAL_STEP_TIMEOUT, TUTORIAL_STEPS, type RaceEngine } from '../game/raceEngine';
 import { useEngineEvent, useTicker } from '../game/engineContext';
 import { useGame } from '../store/gameStore';
 import { HUD } from './HUD';
@@ -12,8 +12,7 @@ const STEPS = [
   { title: 'BRAÇADA CURTA', icon: '👆', text: 'Toque rapidinho na tela (ou aperte e solte o ESPAÇO bem rápido) para dar uma braçada curta.' },
   { title: 'BRAÇADA LONGA', icon: '✊', text: 'Agora SEGURE! A barra de força vai enchendo. Solte para uma braçada bem mais forte.' },
   { title: 'PONTO IDEAL', icon: '🎯', text: 'Solte quando o ponteiro estiver na ZONA VERDE ★ para ganhar potência máxima!' },
-  { title: 'COMBO', icon: '🔥', text: 'Acerte a zona verde 3 vezes seguidas, sem demorar, para fazer COMBO x3!' },
-  { title: 'ENERGIA', icon: '⚡', text: 'Ufa! Sua energia está baixa. Pare de nadar um pouquinho para recuperar o fôlego.' },
+  { title: 'COMBO', icon: '🔥', text: 'Acerte a zona verde 2 vezes seguidas, sem demorar, para fazer COMBO x2!' },
 ];
 
 export function TutorialScreen({ engine }: { engine: RaceEngine }) {
@@ -42,12 +41,13 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
   const step = Math.min(engine.tutorialStep, STEPS.length - 1);
   const info = STEPS[step];
   const need = TUTORIAL_STEPS[step].need;
-  const progress = TUTORIAL_STEPS[step].key === 'rest' ? Math.min(1, engine.player.energy / 75) : Math.min(1, engine.tutorialCount / need);
+  const progress = Math.min(1, engine.tutorialCount / need);
+  const slow = engine.tutorialStepTime > TUTORIAL_STEP_TIMEOUT - 6;
 
   return (
     <>
       {!done && <TouchControl engine={engine} />}
-      <HUD engine={engine} tutorial energyHighlight={TUTORIAL_STEPS[step].key === 'rest' && !done} />
+      <HUD engine={engine} tutorial />
       {!done && (
         <div className="pointer-events-none absolute inset-x-0 top-[88px] z-20 flex justify-center px-3 sm:top-[76px]">
           <div key={step} className="card anim-pop pointer-events-auto w-full max-w-lg p-3 sm:p-4">
@@ -56,9 +56,10 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
                 {info.icon}
               </div>
               <div className="flex-1">
-                <div className="font-display text-xs text-sky-600">TREINO • PASSO {step + 1} DE 5</div>
+                <div className="font-display text-xs text-sky-600">TREINO • PASSO {step + 1} DE {STEPS.length}</div>
                 <div className="font-display text-xl leading-tight text-navy-800 sm:text-2xl">{info.title}</div>
                 <p className="mt-0.5 text-sm font-bold leading-snug text-navy-700 sm:text-base">{info.text}</p>
+                {slow && <p className="mt-1 text-xs font-bold text-sky-600">Sem pressa! Já já seguimos para o próximo passo.</p>}
               </div>
             </div>
             <div className="mt-2 flex items-center gap-2">

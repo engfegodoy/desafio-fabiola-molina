@@ -84,15 +84,15 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
       if (kind !== 'shark') return;
       const k = engine.stateTime;
       if (engine.state === 'intro') {
-        if (!flags.slip && k > 2.85) {
+        if (!flags.slip && k > 3.0) {
           flags.slip = true;
-          audio.slip();
+          audio.jump();
         }
-        if (!flags.splash && k > 4.3) {
+        if (!flags.splash && k > 3.85) {
           flags.splash = true;
           audio.splash();
         }
-        if (!flags.shark && k > 4.6) {
+        if (!flags.shark && k > 4.5) {
           flags.shark = true;
           audio.playMusic(null);
           audio.sharkAppear();

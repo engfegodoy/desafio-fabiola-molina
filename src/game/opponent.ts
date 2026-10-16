@@ -12,7 +12,7 @@ export class OpponentAI {
   swimmer: Swimmer;
   cfg: OpponentConfig;
   rng: () => number;
-  state: 'wait' | 'charging' | 'rest' = 'wait';
+  state: 'wait' | 'charging' = 'wait';
   target = 0.7;
   waitTimer = 0;
 
@@ -41,7 +41,7 @@ export class OpponentAI {
     return this.rng() < 0.5 ? b.yellowStart * (0.6 + this.rng() * 0.35) : b.greenEnd + 0.02 + this.rng() * 0.08;
   }
 
-  update(dt: number, env: SwimEnv, warning: WaveWarning | null, active: boolean): StrokeResult | null {
+  update(dt: number, env: SwimEnv, _warning: WaveWarning | null, active: boolean): StrokeResult | null {
     const s = this.swimmer;
     let result: StrokeResult | null = null;
     if (active && !s.finished) {
@@ -49,21 +49,9 @@ export class OpponentAI {
         case 'wait':
           this.waitTimer -= dt;
           if (this.waitTimer <= 0) {
-            if (s.energy < this.cfg.restBelow) {
-              this.state = 'rest';
-            } else if (
-              this.cfg.waveSmart &&
-              warning &&
-              warning.kind === 'front' &&
-              warning.inside > 0.45 &&
-              s.energy < 80
-            ) {
-              this.waitTimer = 0.2;
-            } else {
-              this.target = this.pickTarget();
-              s.press();
-              this.state = 'charging';
-            }
+            this.target = this.pickTarget();
+            s.press();
+            this.state = 'charging';
           }
           break;
         case 'charging': {
@@ -77,12 +65,6 @@ export class OpponentAI {
           }
           break;
         }
-        case 'rest':
-          if (s.energy >= this.cfg.restUntil) {
-            this.state = 'wait';
-            this.waitTimer = 0;
-          }
-          break;
       }
     }
     s.update(dt, env);
