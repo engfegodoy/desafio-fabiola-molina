@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
-import { useGame } from './store/gameStore';
+import { isTouch, useGame } from './store/gameStore';
 import { RaceEngine } from './game/raceEngine';
 import { current } from './game/engineContext';
 import { PHASE_STAGE } from './config/balance';
@@ -47,8 +47,9 @@ export default function App() {
   const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio || 1, quality === 'high' ? 1.75 : 1.25));
 
   const engine = useMemo(() => {
-    if (screen === 'tutorial') return new RaceEngine('tutorial');
-    if (screen === 'race') return new RaceEngine(PHASE_STAGE[phase]);
+    const opts = { desktop: !isTouch };
+    if (screen === 'tutorial') return new RaceEngine('tutorial', undefined, opts);
+    if (screen === 'race') return new RaceEngine(PHASE_STAGE[phase], undefined, opts);
     return null;
     // runId força uma nova prova ao repetir a fase
     // eslint-disable-next-line react-hooks/exhaustive-deps

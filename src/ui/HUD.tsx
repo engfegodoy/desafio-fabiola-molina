@@ -13,7 +13,7 @@ export function PowerBar({ engine, compact = false }: { engine: RaceEngine; comp
   const fill = useRef<HTMLDivElement>(null);
   const ghost = useRef<HTMLDivElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
-  const b = engine.cfg.bar;
+  const b = engine.playerBar;
 
   useEffect(() => {
     let raf = 0;
@@ -107,13 +107,12 @@ export function ComboBox({ engine }: { engine: RaceEngine }) {
 
 /* ===================== Energia ===================== */
 export function energyState(e: number) {
-  const v = Math.round(e);
-  if (v <= ENERGY.criticalAt) return { key: 'critical', label: 'SEM FÔLEGO!', color: 'linear-gradient(90deg,#ff2d2d,#ff6b4a)', text: 'text-coral-400', blink: 'blink-strong' } as const;
-  if (v <= ENERGY.lowAt) return { key: 'low', label: 'RESPIRE!', color: 'linear-gradient(90deg,#ff7a1a,#ffb21f)', text: 'text-orange-300', blink: 'blink-soft' } as const;
-  if (v <= ENERGY.warnAt) return { key: 'warn', label: 'ATENÇÃO', color: 'linear-gradient(90deg,#ffd23f,#ffe873)', text: 'text-sun-300', blink: '' } as const;
-  return { key: 'ok', label: 'ENERGIA', color: 'linear-gradient(90deg,#22d3ee,#3df58a)', text: 'text-white/90', blink: '' } as const;
+  if (e <= ENERGY.criticalAt) return { key: 'critical', label: 'SEM FÔLEGO!', fill: '#ff3b3b', text: 'text-coral-400', blink: 'blink-strong' } as const;
+  if (e <= ENERGY.lowAt) return { key: 'low', label: 'RESPIRE!', fill: '#ff9a1a', text: 'text-orange-300', blink: 'blink-soft' } as const;
+  return { key: 'ok', label: 'FÔLEGO', fill: '#3df5c8', text: 'text-white/90', blink: '' } as const;
 }
 
+/** Barra de fôlego em 15 partes: cada braçada gasta 1, respirar devolve 5. */
 export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; highlight?: boolean }) {
   const p = engine.player;
   const st = energyState(p.energy);
@@ -121,6 +120,7 @@ export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; h
   useEngineEvent(engine, (e) => {
     if (e.type === 'breath' && e.result.valid) setGlow((g) => g + 1);
   });
+  const shown = Math.max(0, Math.round(p.energy * 2) / 2);
   return (
     <div
       key={glow}
@@ -128,17 +128,44 @@ export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; h
     >
       <div className="font-display flex items-center justify-between text-[11px] uppercase sm:text-xs">
         <span className={`${st.text} ${st.blink}`}>🫁 {st.label}</span>
-        <span className={`tabular-nums ${st.text}`}>{Math.round(p.energy)}%</span>
+        <span className={`tabular-nums ${st.text}`}>
+          {Number.isInteger(shown) ? shown : shown.toFixed(1)}/{ENERGY.max}
+        </span>
       </div>
-      <div className={`relative mt-1 h-4 overflow-hidden rounded-full border-2 border-white/80 bg-navy-900 sm:h-5 ${st.blink}`}>
-        <div
-          className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-150"
-          style={{ width: `${p.energy}%`, background: st.color, boxShadow: st.key === 'ok' ? '0 0 10px rgba(60,240,255,0.6)' : '' }}
-        />
-        {/* marca dos 50%: abaixo dela a nadadora perde velocidade */}
-        <div className="absolute inset-y-0 border-l-2 border-dashed border-white/70" style={{ left: `${ENERGY.fullAbove}%` }} />
+      <div className={`mt-1 flex h-4 gap-[2px] sm:h-5 ${st.blink}`}>
+        {Array.from({ length: ENERGY.max }, (_, i) => {
+          const fill = Math.max(0, Math.min(1, p.energy - i));
+          const slowZone = i < ENERGY.lowAt; // partes que, ao acabar, já deixam a nadadora lenta
+          return (
+            <div
+              key={i}
+              className={`relative flex-1 overflow-hidden rounded-[3px] border ${slowZone ? 'border-white/40' : 'border-white/80'} bg-navy-900`}
+            >
+              <div
+                className="absolute inset-y-0 left-0 transition-[width] duration-150"
+                style={{ width: `${fill * 100}%`, background: st.fill, boxShadow: st.key === 'ok' && fill > 0 ? '0 0 6px rgba(61,245,200,0.7)' : '' }}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
+  );
+}
+
+/** Bordas da tela escurecendo quando o fôlego chega a 10/15 (mais escuro quanto menos energia). */
+export function BreathVignette({ engine }: { engine: RaceEngine }) {
+  const e = engine.player.energy;
+  const racing = engine.controllable;
+  const k = racing && e <= ENERGY.lowAt ? 0.55 + 0.45 * (1 - e / ENERGY.lowAt) : 0;
+  return (
+    <div
+      className={`pointer-events-none absolute inset-0 z-[4] transition-opacity duration-500 ${k > 0.6 ? 'blink-soft' : ''}`}
+      style={{
+        opacity: k,
+        background: 'radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(5,8,30,0.55) 75%, rgba(5,8,30,0.92) 100%)',
+      }}
+    />
   );
 }
 
@@ -174,6 +201,7 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
         const q = QUALITY_MSG[e.result.quality];
         push(q.text, q.color, q.size);
       }
+      if (e.result.glideEarned) push('🌊 SUPER DESLIZE! 3 BRAÇADAS', '#7ff0ff', 26);
       if (e.result.comboUp) {
         const n = e.result.combo;
         push(n >= SWIM.comboMax ? `COMBO x${n}! MÁXIMO!` : `COMBO x${n}!`, '#ffd23f', 28 + n * 2);
@@ -182,14 +210,12 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
     if (e.type === 'comboLost') push('PERDEU O RITMO!', '#ff9a3d', 22);
     if (e.type === 'breath') {
       const o = e.result.outcome;
-      if (o === 'ok') push(`+${Math.round(e.result.gain)}% FÔLEGO!`, '#3df5ff', 28);
-      else if (o === 'early') push('RESPIROU CEDO DEMAIS! −RITMO', '#ffb21f', 22);
+      if (o === 'ok' && e.result.gain > 0) push(`+${Math.round(e.result.gain)} FÔLEGO!`, '#3df5ff', 28);
       else if (o === 'consecutive') push('DÊ UMA BRAÇADA ANTES DE RESPIRAR!', '#ff7b6b', 20);
     }
     if (e.type === 'sharkBreath') push('O TUBARÃO PAROU PARA RESPIRAR! 🦈', '#3df5ff', 22);
     if (e.type === 'energy') {
-      if (e.level === 'warn') push('ATENÇÃO: ENERGIA EM 50%', '#ffd23f', 20);
-      else if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 26);
+      if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 26);
       else push('SEM FÔLEGO!', '#ff3b3b', 30);
     }
   });
@@ -335,9 +361,16 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
       <Feedback engine={engine} />
 
       {/* base */}
+      <BreathVignette engine={engine} />
       <div className="safe-pad absolute inset-x-0 bottom-0">
+        {/* botões grandes ACIMA das barras (modo botões no celular) */}
+        {buttons && (
+          <div className="mx-auto mb-2 flex max-w-4xl items-end justify-between px-1">
+            <BreathButton engine={engine} />
+            <SwimButton engine={engine} />
+          </div>
+        )}
         <div className="mx-auto flex max-w-4xl items-end gap-1.5 sm:gap-2">
-          {buttons && <BreathButton engine={engine} />}
           {!isTouch && (
             <div className="hud-card hidden w-48 shrink-0 flex-col justify-center gap-0.5 self-stretch px-3 py-1.5 lg:flex">
               <div className="text-[11px] font-bold leading-tight text-white/90">
@@ -345,7 +378,7 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
                 <span className="text-[#3df58a]">verde</span> = NADAR
               </div>
               <div className="text-[11px] font-bold leading-tight text-white/90">
-                <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+50%)
+                <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+5 de fôlego)
               </div>
             </div>
           )}
@@ -355,10 +388,15 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
                 <EnergyBar engine={engine} highlight={energyHighlight} />
               </div>
               <ComboBox engine={engine} />
+              {engine.player.glideLeft > 0 && (
+                <div className="hud-card font-display anim-pop flex flex-col items-center justify-center px-2 text-center text-[10px] leading-tight text-aqua-300">
+                  🌊
+                  <span>DESLIZE x{engine.player.glideLeft}</span>
+                </div>
+              )}
             </div>
             <PowerBar engine={engine} />
           </div>
-          {buttons && <SwimButton engine={engine} />}
         </div>
       </div>
     </div>

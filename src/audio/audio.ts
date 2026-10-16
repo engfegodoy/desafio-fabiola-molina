@@ -414,15 +414,11 @@ class AudioEngine {
   }
 
   /** Respiração válida: inspiração (ruído subindo) + brilho. */
-  breath(early = false) {
+  breath() {
     if (!this.ready) return;
     const t = this.ctx!.currentTime;
     this.noise(0.45, { type: 'bandpass', freq: 600, sweep: 2200, vol: 0.16, attack: 0.15, q: 0.7 });
-    if (!early) {
-      [76, 83].forEach((m, i) => this.tone(mtof(m), 0.2, { type: 'sine', vol: 0.09, when: t + 0.3 + i * 0.08 }));
-    } else {
-      this.tone(mtof(64), 0.18, { type: 'triangle', vol: 0.07, when: t + 0.3 });
-    }
+    [76, 83].forEach((m, i) => this.tone(mtof(m), 0.2, { type: 'sine', vol: 0.09, when: t + 0.3 + i * 0.08 }));
   }
 
   /** Respiração recusada (duas seguidas). */
@@ -432,11 +428,20 @@ class AudioEngine {
   }
 
   /** Alerta de energia baixa. */
-  energyAlert(level: 'warn' | 'low' | 'critical') {
+  energyAlert(level: 'low' | 'critical') {
     if (!this.ready) return;
     const t = this.ctx!.currentTime;
     const n = level === 'critical' ? 3 : level === 'low' ? 2 : 1;
     for (let i = 0; i < n; i++) this.tone(level === 'critical' ? 520 : 760, 0.09, { type: 'square', vol: 0.06, when: t + i * 0.13, filter: 2200 });
+  }
+
+  /** Batida do coração ("tum-tum"); vol 0..1. */
+  heartbeat(vol: number) {
+    if (!this.ready) return;
+    const t = this.ctx!.currentTime;
+    const v = 0.12 + vol * 0.45;
+    this.tone(62, 0.16, { type: 'sine', vol: v, when: t, slide: 40 });
+    this.tone(58, 0.14, { type: 'sine', vol: v * 0.75, when: t + 0.17, slide: 38 });
   }
 
   copy() {

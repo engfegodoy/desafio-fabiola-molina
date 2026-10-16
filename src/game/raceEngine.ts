@@ -1,9 +1,9 @@
-import { ENERGY, LANES, STAGES, SWIM, TIMING, type PhaseId, type StageConfig, type StageKind } from '../config/balance.ts';
+import { DESKTOP_BAR, ENERGY, LANES, STAGES, SWIM, TIMING, type PhaseId, type PowerBarConfig, type StageConfig, type StageKind } from '../config/balance.ts';
 import { OpponentAI, Shark } from './opponent.ts';
 import { Swimmer, type BreathResult, type StrokeResult } from './swimmer.ts';
 import { mulberry32, WaveField, type WaveWarning } from './waves.ts';
 
-export type RaceState = 'intro' | 'countdown' | 'racing' | 'finishing' | 'outro' | 'done';
+export type RaceState = 'intro' | 'countdown' | 'racing' | 'finishing' | 'outro' | 'done' | 'drowned';
 export type Outcome = 'win' | 'lose' | 'escaped' | 'caught';
 
 export interface ScoreBreakdown {
@@ -41,21 +41,39 @@ export type EngineEvent =
   | { type: 'wave'; kind: 'front' | 'back' }
   | { type: 'comboLost' }
   | { type: 'breath'; who: 'player'; result: BreathResult }
-  | { type: 'energy'; level: 'warn' | 'low' | 'critical' }
+  | { type: 'energy'; level: 'low' | 'critical' }
+  | { type: 'drowned' }
   | { type: 'sharkBreath' };
 
 type Listener = (e: EngineEvent) => void;
 
-/** Treino obrigatório: 15 braçadas no verde e 2 respirações válidas. */
+/** Treino obrigatório: 20 braçadas e pelo menos 1 respiração. */
 export const TUTORIAL_STEPS = [
-  { key: 'swim', need: 5 },
+  { key: 'swim', need: 10 },
   { key: 'breath', need: 1 },
-  { key: 'swim', need: 5 },
-  { key: 'breath', need: 1 },
-  { key: 'swim', need: 5 },
+  { key: 'swim', need: 10 },
 ] as const;
-export const TUTORIAL_TOTAL_GREEN = 15;
-export const TUTORIAL_TOTAL_BREATHS = 2;
+export const TUTORIAL_TOTAL_STROKES = 20;
+export const TUTORIAL_TOTAL_BREATHS = 1;
+
+/** No computador a zona verde fica maior e mais perto do começo da barra. */
+export function desktopBar(b: PowerBarConfig): PowerBarConfig {
+  const k = DESKTOP_BAR.shift;
+  const greenStart = b.greenStart * k;
+  const greenEnd = greenStart + (b.greenEnd - b.greenStart) * DESKTOP_BAR.widen;
+  return {
+    chargeTime: b.chargeTime,
+    yellowStart: b.yellowStart * k,
+    greenStart,
+    greenEnd,
+    yellowEnd: Math.min(0.97, greenEnd + (b.yellowEnd - b.greenEnd)),
+  };
+}
+
+export interface EngineOptions {
+  /** Jogando no computador (teclado): barra de força mais generosa. */
+  desktop?: boolean;
+}
 
 /**
  * Motor da prova. Puro (sem React/Three), atualizado a cada quadro.
@@ -89,17 +107,21 @@ export class RaceEngine {
   tutorialStep = 0;
   tutorialCount = 0;
   tutorialDone = false;
-  /** Totais do treino (braçadas no verde e respirações válidas). */
-  tutorialGreen = 0;
+  /** Totais do treino (braçadas e respirações válidas). */
+  tutorialStrokes = 0;
   tutorialBreaths = 0;
+  /** Barra de força do jogador (no computador é mais generosa). */
+  playerBar: PowerBarConfig;
   /** Último nível de energia avisado (para não repetir alertas). */
-  private energyLevel: 'ok' | 'warn' | 'low' | 'critical' = 'ok';
+  private energyLevel: 'ok' | 'low' | 'critical' = 'ok';
 
-  constructor(kind: StageKind, seed = Math.floor(Math.random() * 1e9)) {
+  constructor(kind: StageKind, seed = Math.floor(Math.random() * 1e9), opts: EngineOptions = {}) {
     this.kind = kind;
     this.cfg = STAGES[kind];
     this.rng = mulberry32(seed);
-    this.player = new Swimmer(this.cfg.bar, this.cfg.playerPower);
+    this.playerBar = opts.desktop ? desktopBar(this.cfg.bar) : this.cfg.bar;
+    // A Fabiola usa sempre a barra original: o desempenho dela não muda.
+    this.player = new Swimmer(this.playerBar, this.cfg.playerPower);
     this.waves = new WaveField(this.cfg.waves, seed ^ 0x9e3779b9);
     const lanes = kind === 'pool' ? LANES.pool : kind === 'seaDay' || kind === 'seaNight' ? LANES.sea : LANES.solo;
     this.playerX = lanes.player;
@@ -194,16 +216,29 @@ export class RaceEngine {
     if (r) {
       this.emit({ type: 'stroke', who: 'player', result: r, x: this.playerX, z: -this.player.distance });
       if (r.comboBroken) this.emit({ type: 'comboLost' });
+      // Sem fôlego: afogou (tem prioridade sobre qualquer conquista do treino).
+      if (this.player.energy <= ENERGY.drownAt + 1e-6) {
+        this.drown();
+        return;
+      }
       if (this.kind === 'tutorial') this.tutorialOnStroke(r);
       this.checkEnergyAlerts();
     }
   }
 
-  /** Avisos de energia: atenção em 50%, "PRECISA RESPIRAR!" abaixo, "SEM FÔLEGO!" perto de zero. */
+  /** Ficou sem fôlego: "Oh não! Você se afogou!" — a partida recomeça do zero. */
+  private drown() {
+    this.player.cancelCharge();
+    this.player.thrustAccel = 0;
+    this.setState('drowned');
+    this.emit({ type: 'drowned' });
+  }
+
+  /** Avisos de energia: "PRECISA RESPIRAR!" com 10/15 ou menos, "SEM FÔLEGO!" perto de zero. */
   private checkEnergyAlerts() {
-    const e = Math.round(this.player.energy);
-    const level = e <= ENERGY.criticalAt ? 'critical' : e <= ENERGY.lowAt ? 'low' : e <= ENERGY.warnAt ? 'warn' : 'ok';
-    const rank = { ok: 0, warn: 1, low: 2, critical: 3 } as const;
+    const e = this.player.energy;
+    const level = e <= ENERGY.criticalAt ? 'critical' : e <= ENERGY.lowAt ? 'low' : 'ok';
+    const rank = { ok: 0, low: 1, critical: 2 } as const;
     if (rank[level] > rank[this.energyLevel] && level !== 'ok') this.emit({ type: 'energy', level });
     this.energyLevel = level;
   }
@@ -302,6 +337,10 @@ export class RaceEngine {
         }
         break;
       case 'done':
+        break;
+      case 'drowned':
+        p.speed *= 0.95;
+        p.update(dt);
         break;
     }
   }
@@ -405,11 +444,8 @@ export class RaceEngine {
     const avgSpeed = st.raceTime > 0 ? st.speedSum / st.raceTime : 0;
     const breakdown: ScoreBreakdown = {
       velocidade: Math.round(Math.min(1, avgSpeed / 2.4) * 400),
-      // Resistência: tempo com fôlego (energia >= 50%), descontando respirações antecipadas.
-      resistencia: Math.max(
-        0,
-        Math.round((1 - Math.min(1, st.lowEnergyTime / Math.max(1, st.raceTime))) * 300 - st.earlyBreaths * 30),
-      ),
+      // Resistência: tempo com fôlego (energia acima de 10/15).
+      resistencia: Math.round((1 - Math.min(1, st.lowEnergyTime / Math.max(1, st.raceTime))) * 300),
       tecnica: Math.round(
         longStrokes > 0 ? Math.min(1, (st.perfect + st.great * 0.7 + st.good * 0.3) / longStrokes) * 400 : 0,
       ),
@@ -434,10 +470,9 @@ export class RaceEngine {
   }
 
   // ---------------- Tutorial ----------------
-  private tutorialOnStroke(r: StrokeResult) {
+  private tutorialOnStroke(_r: StrokeResult) {
     if (this.tutorialDone) return;
-    if (r.zone !== 'green') return;
-    this.tutorialGreen++;
+    this.tutorialStrokes++;
     const step = TUTORIAL_STEPS[this.tutorialStep];
     if (step.key !== 'swim') return;
     this.tutorialCount++;

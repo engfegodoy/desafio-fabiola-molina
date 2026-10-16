@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import type { RaceEngine } from '../game/raceEngine';
 import { useGame } from '../store/gameStore';
 import { audio } from '../audio/audio';
-import { SWIM } from '../config/balance';
+import { ENERGY, SWIM } from '../config/balance';
 
 /** Liga os eventos do jogo aos efeitos sonoros e à trilha. */
 export function GameAudio({ engine }: { engine: RaceEngine | null }) {
@@ -52,7 +52,7 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
           audio.comboLost();
           break;
         case 'breath':
-          if (e.result.valid) audio.breath(e.result.outcome === 'early');
+          if (e.result.valid) audio.breath();
           else if (e.result.outcome === 'consecutive') audio.breathDenied();
           break;
         case 'energy':
@@ -87,7 +87,18 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
     });
 
     // Linha do tempo sonora da cena do barco e do tubarão
+    let beat = 0;
     const id = window.setInterval(() => {
+      // Coração: com 10/15 ou menos de fôlego, bate mais alto e mais rápido.
+      const en = engine.player.energy;
+      if (engine.controllable && en <= ENERGY.lowAt && !useGame.getState().paused) {
+        const k = 1 - en / ENERGY.lowAt;
+        beat -= 0.05;
+        if (beat <= 0) {
+          beat = 0.95 - 0.55 * k;
+          audio.heartbeat(0.3 + 0.7 * k);
+        }
+      } else beat = 0;
       if (kind !== 'shark') return;
       const k = engine.stateTime;
       if (engine.state === 'intro') {

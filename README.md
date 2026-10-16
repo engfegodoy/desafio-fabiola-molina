@@ -20,7 +20,7 @@ Depois abra `http://localhost:5173`. No Replit, o botão **Run** já executa `np
 
 ## Fluxo
 
-Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dicas → Controles → Treino obrigatório (15 braçadas no verde + 2 respirações, com "Pular tutorial") → 4 fases → Prêmio.
+Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dicas → Controles → Treino obrigatório (20 braçadas + 1 respiração, com "Pular tutorial") → 4 fases → Prêmio.
 
 ## Controles
 
@@ -29,12 +29,16 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
   - **Botões separados:** NADAR à direita (segure e solte), RESPIRAR à esquerda.
   - **Toque e gesto:** segure e solte em qualquer lugar = braçada; arraste para cima (mínimo 60 px) = respirar.
 
-## Energia e respiração
+## Fôlego e respiração
 
-- A energia começa em 100% e **não volta sozinha**. Braçada no verde gasta 10%, no amarelo 14%, no vermelho 18%.
-- RESPIRAR devolve 50% (até 100%). É preciso dar ao menos uma braçada entre duas respirações; respirar com 70% ou mais quebra o combo e freia um pouco.
-- Abaixo de 50% a nadadora perde velocidade aos poucos (quanto menos energia, maior a perda). O ritmo ideal é 5 braçadas no verde + 1 respiração.
-- Todos esses números ficam em `ENERGY` e `ZONES` em `src/config/balance.ts`.
+- O fôlego tem **15 partes** e não volta sozinho. Cada braçada gasta 1 (amarelo 1,5; vermelho 2).
+- **RESPIRAR** devolve 5. Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
+- Com **10/15 ou menos** a nadadora fica lenta aos poucos, as bordas da tela escurecem, o coração acelera e a barra pisca.
+- Se o fôlego **zerar**: "Oh não! Você se afogou!" e o jogo recomeça do zero (no treino, recomeça o treino).
+- **Combo x5:** a cada 5 braçadas seguidas no verde, as 3 próximas deslizam mais longe.
+- No **computador** a zona verde é maior e mais perto do começo da barra.
+- A Fabiola respira (com uma pequena pausa) e o tubarão para para respirar a cada 6 s.
+- Todos os números ficam em `ENERGY`, `GLIDE`, `DESKTOP_BAR` e `ZONES` em `src/config/balance.ts`.
 
 ## Estrutura
 

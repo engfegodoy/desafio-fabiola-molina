@@ -43,7 +43,7 @@ export function useKeyboard(engine: RaceEngine | null) {
       } else if (act === 'breathe') {
         if (!e.repeat) actions.breathe(engine);
       } else if (e.code === 'KeyP' || e.code === 'Escape') {
-        if (engine.state === 'done') return;
+        if (engine.state === 'done' || engine.state === 'drowned') return;
         e.preventDefault();
         engine.release();
         setPaused(!st.paused);

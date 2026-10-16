@@ -19,18 +19,21 @@ interface Bot {
   breathEvery?: number;
   /** Só toques rápidos. */
   spam?: boolean;
+  /** Joga no computador (barra mais generosa). */
+  desktop?: boolean;
 }
 
 const BOTS: Bot[] = [
-  { name: 'craque', sigma: 0.03, pause: 0.1, breatheAt: 52 },
-  { name: 'bom', sigma: 0.05, pause: 0.13, breatheAt: 52 },
-  { name: 'erra-e-ajusta', sigma: 0.065, pause: 0.15, breatheAt: 50 },
-  { name: 'médio', sigma: 0.08, pause: 0.18, breatheAt: 40 },
-  { name: 'iniciante', sigma: 0.12, pause: 0.24, breatheAt: 30 },
+  { name: 'craque', sigma: 0.03, pause: 0.1, breatheAt: 10 },
+  { name: 'bom', sigma: 0.05, pause: 0.13, breatheAt: 10 },
+  { name: 'bom (computador)', sigma: 0.05, pause: 0.13, breatheAt: 10, desktop: true },
+  { name: 'erra-e-ajusta', sigma: 0.065, pause: 0.15, breatheAt: 10 },
+  { name: 'médio', sigma: 0.08, pause: 0.18, breatheAt: 8 },
+  { name: 'iniciante', sigma: 0.12, pause: 0.24, breatheAt: 6 },
   { name: 'sem-respirar', sigma: 0.03, pause: 0.1, breatheAt: -1 },
   { name: 'respira-demais', sigma: 0.03, pause: 0.1, breatheAt: -1, breathEvery: 2 },
-  { name: 'respira-tarde', sigma: 0.03, pause: 0.1, breatheAt: 15 },
-  { name: 'só-toques', sigma: 0, pause: 0.12, breatheAt: 50, spam: true },
+  { name: 'respira-tarde', sigma: 0.03, pause: 0.1, breatheAt: 3 },
+  { name: 'só-toques', sigma: 0, pause: 0.12, breatheAt: 10, spam: true },
 ];
 
 function gauss() {
@@ -42,17 +45,17 @@ function gauss() {
 }
 
 function runOnce(kind: StageKind, bot: Bot) {
-  const eng = new RaceEngine(kind);
+  const eng = new RaceEngine(kind, undefined, { desktop: bot.desktop });
   const dt = 1 / 60;
   let mode: 'wait' | 'hold' = 'wait';
   let timer = 0;
   let releaseAt = 0;
   let sinceBreath = 0;
   let guard = 0;
-  while (eng.state !== 'done' && guard++ < 60 * 400) {
+  while (eng.state !== 'done' && eng.state !== 'drowned' && guard++ < 60 * 400) {
     if (eng.controllable) {
       const p = eng.player;
-      const bar = eng.cfg.bar;
+      const bar = eng.playerBar;
       if (mode === 'wait') {
         timer -= dt;
         if (timer <= 0 && !p.breathing) {
@@ -80,7 +83,7 @@ function runOnce(kind: StageKind, bot: Bot) {
     }
     eng.update(dt);
   }
-  return eng.result!;
+  return eng.result ?? { won: false, playerTime: 0, opponentTime: 0, drowned: true };
 }
 
 const N = Number(process.env.SIM_N ?? 300);
@@ -90,17 +93,25 @@ for (const st of stages) {
   console.log(`\n=== ${st} ===`);
   for (const bot of BOTS) {
     let wins = 0;
+    let drowned = 0;
     let tSum = 0;
     let oSum = 0;
+    let n = 0;
     for (let i = 0; i < N; i++) {
-      const r = runOnce(st, bot);
+      const r = runOnce(st, bot) as { won: boolean; playerTime: number; opponentTime?: number; drowned?: boolean };
       if (r.won) wins++;
+      if (r.drowned) {
+        drowned++;
+        continue;
+      }
+      n++;
       tSum += r.playerTime;
       oSum += r.opponentTime ?? 0;
     }
-    const extra = st === 'shark' ? '' : `  fabiola ${(oSum / N).toFixed(2)}s`;
+    const extra = st === 'shark' ? '' : `  fabiola ${(oSum / Math.max(1, n)).toFixed(2)}s`;
+    const dr = drowned ? `  afogou ${((drowned / N) * 100).toFixed(0)}%` : '';
     console.log(
-      `${bot.name.padEnd(15)} vitórias ${((wins / N) * 100).toFixed(0).padStart(3)}%  tempo ${(tSum / N).toFixed(2)}s${extra}`,
+      `${bot.name.padEnd(17)} vitórias ${((wins / N) * 100).toFixed(0).padStart(3)}%  tempo ${(tSum / Math.max(1, n)).toFixed(2)}s${extra}${dr}`,
     );
   }
 }

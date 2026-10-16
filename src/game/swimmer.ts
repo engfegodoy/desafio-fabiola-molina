@@ -1,4 +1,4 @@
-import { ENERGY, QUALITY, SWIM, ZONES, type PowerBarConfig } from '../config/balance.ts';
+import { ENERGY, GLIDE, QUALITY, SWIM, ZONES, type PowerBarConfig } from '../config/balance.ts';
 
 export type StrokeQuality = 'short' | 'perfect' | 'great' | 'good' | 'early' | 'passed';
 export type StrokeZone = 'green' | 'yellow' | 'red' | 'tap';
@@ -14,12 +14,16 @@ export interface StrokeResult {
   comboUp: boolean;
   /** Braçada atropelada (ritmo ruim): "PERDEU O RITMO!". */
   rushed: boolean;
+  /** Esta braçada desliza mais (bônus do combo x5). */
+  glide: boolean;
+  /** Acabou de ganhar o bônus de deslize. */
+  glideEarned: boolean;
   charge: number;
   long: boolean;
   energyCost: number;
 }
 
-export type BreathOutcome = 'ok' | 'early' | 'consecutive' | 'busy';
+export type BreathOutcome = 'ok' | 'consecutive' | 'busy';
 
 export interface BreathResult {
   outcome: BreathOutcome;
@@ -84,7 +88,11 @@ export class Swimmer {
   strokesSinceBreath = 1;
   /** Apertou NADAR durante a respiração: começa a carregar quando ela terminar. */
   pendingPress = false;
-  /** Freio temporário (zona vermelha / respiração antecipada). */
+  /** Braçadas seguidas no verde e bônus de deslize restante. */
+  greenStreak = 0;
+  glideLeft = 0;
+  gliding = false;
+  /** Freio temporário (zona vermelha). */
   private brakeMul = 1;
   private brakeLeft = 0;
 
@@ -98,7 +106,6 @@ export class Swimmer {
     short: 0,
     rushed: 0,
     breaths: 0,
-    earlyBreaths: 0,
     ignoredBreaths: 0,
     lowEnergyTime: 0,
     raceTime: 0,
@@ -238,16 +245,45 @@ export class Swimmer {
     this.strokesSinceBreath++;
     this.lastStrokePower = long ? Math.min(1.3, efficiency) : 0.35;
 
+    // Deslize: a cada 5 seguidas no verde, as 3 próximas braçadas vão mais longe.
+    this.gliding = this.glideLeft > 0;
+    if (this.gliding) this.glideLeft--;
+    let glideEarned = false;
+    if (zone === 'green' && !rushed) {
+      this.greenStreak++;
+      if (this.greenStreak % GLIDE.every === 0) {
+        this.glideLeft = GLIDE.strokes;
+        glideEarned = true;
+      }
+    } else {
+      this.greenStreak = 0;
+    }
+
     this.stats.strokes++;
     this.stats[quality]++;
     if (rushed) this.stats.rushed++;
 
-    return { quality, zone, efficiency, impulse, combo: this.combo, comboBroken, comboUp, rushed, charge, long, energyCost: cost };
+    return {
+      quality,
+      zone,
+      efficiency,
+      impulse,
+      combo: this.combo,
+      comboBroken,
+      comboUp,
+      rushed,
+      glide: this.gliding,
+      glideEarned,
+      charge,
+      long,
+      energyCost: cost,
+    };
   }
 
   /**
    * RESPIRAR: devolve fôlego sem parar o nadador (a velocidade do momento é preservada,
-   * sem aceleração extra). Duas seguidas sem braçada no meio são ignoradas.
+   * sem aceleração extra). Respirar a mais não tem penalidade; duas seguidas sem braçada
+   * no meio são ignoradas.
    */
   breathe(): BreathResult {
     const energyBefore = this.energy;
@@ -259,20 +295,13 @@ export class Swimmer {
       return fail('consecutive');
     }
     this.cancelCharge();
-    const early = energyBefore >= ENERGY.earlyBreathAbove;
     const gain = Math.min(ENERGY.breathGain, ENERGY.max - energyBefore);
     this.energy = energyBefore + gain;
     this.breathTimer = ENERGY.breathTime;
     this.strokesSinceBreath = 0;
     this.breathCount++;
     this.stats.breaths++;
-    if (early) {
-      // Respirar sem necessidade quebra o ritmo: perde o combo e freia um pouco.
-      this.stats.earlyBreaths++;
-      this.combo = 0;
-      this.brake(ENERGY.earlyBreathDrag, ENERGY.earlyBreathDragTime);
-    }
-    return { outcome: early ? 'early' : 'ok', valid: true, gain, energyBefore, energyAfter: this.energy };
+    return { outcome: 'ok', valid: true, gain, energyBefore, energyAfter: this.energy };
   }
 
   update(dt: number, env: SwimEnv = CALM_ENV): void {
@@ -312,7 +341,7 @@ export class Swimmer {
       if (this.thrustLeft <= 0) this.thrustAccel = 0;
     }
     const v = this.speed;
-    const dragMul = env.dragMul * this.brakeMul * (1 + ENERGY.emptyExtraDrag * tired);
+    const dragMul = env.dragMul * this.brakeMul * (1 + ENERGY.emptyExtraDrag * tired) * (this.gliding ? GLIDE.dragMul : 1);
     const drag = (SWIM.linearDrag * v + SWIM.quadDrag * v * v) * dragMul;
     this.speed = Math.max(0, Math.min(SWIM.maxSpeed, v + (accel - drag) * dt));
     this.distance += this.speed * dt;
@@ -320,7 +349,7 @@ export class Swimmer {
     if (!this.finished) {
       this.stats.raceTime += dt;
       this.stats.speedSum += this.speed * dt;
-      if (this.energy < ENERGY.fullAbove) this.stats.lowEnergyTime += dt;
+      if (this.energy <= ENERGY.lowAt) this.stats.lowEnergyTime += dt;
     }
   }
 }

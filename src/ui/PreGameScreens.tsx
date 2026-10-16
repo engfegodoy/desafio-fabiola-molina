@@ -29,21 +29,18 @@ export function RulesScreen() {
   const breathHow = isTouch ? (scheme === 'buttons' ? 'botão RESPIRAR' : 'arraste para cima') : bindingLabel(bindings.breathe);
 
   const tips = [
-    { icon: '🏊', title: 'Braçada', text: `Segure (${swimHow}) para encher a barra de força e solte para dar a braçada.` },
-    { icon: '🎯', title: 'Zona verde', text: 'Solte no VERDE: impulso máximo e menos gasto de energia. Amarelo rende menos; vermelho freia e quebra o combo.' },
-    { icon: '🫁', title: 'Respirar', text: `Use RESPIRAR (${breathHow}) para recuperar ${ENERGY.breathGain}% de energia. A energia NÃO volta sozinha.` },
-    { icon: '5️⃣', title: 'A cada ~5 braçadas', text: `Cada braçada no verde gasta ${ENERGY.costGreen}%. Cinco braçadas = ${ENERGY.costGreen * 5}%: é a hora de respirar.` },
-    { icon: '🐢', title: 'Abaixo de 50%', text: 'Com menos de 50% de energia a barra pisca e você vai ficando cada vez mais lento.' },
-    { icon: '🔥', title: 'Combo', text: 'Braçadas seguidas no verde, no ritmo certo, sobem o combo (até x5) e deixam você mais rápido.' },
-    { icon: '⚠️', title: 'Sem exagero', text: 'Respirar com energia alta quebra o ritmo e o combo. E não dá para respirar duas vezes sem uma braçada no meio.' },
+    { icon: '🏊', title: 'Nade no verde', text: `Segure (${swimHow}) e solte no VERDE.` },
+    { icon: '🫁', title: 'Respire a cada 5', text: `Cada braçada gasta 1 de fôlego. RESPIRAR (${breathHow}) devolve 5.` },
+    { icon: '🐢', title: 'Fôlego baixo', text: `Com ${ENERGY.lowAt}/${ENERGY.max} você fica lento. Se zerar, se afoga e recomeça!` },
+    { icon: '🌊', title: 'Combo x5', text: '5 seguidas no verde: desliza mais nas 3 próximas.' },
   ];
 
   return (
-    <Shell step="PASSO 2 DE 3 • REGRAS E DICAS">
+    <Shell step="PASSO 2 DE 3 • REGRAS">
       <div className="font-display text-stroke text-center text-4xl text-sun-400 sm:text-5xl">COMO NADAR</div>
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {tips.map((t, i) => (
-          <div key={t.title} className="anim-slide flex gap-3 rounded-2xl bg-sky-50 p-3" style={{ animationDelay: `${i * 0.06}s` }}>
+          <div key={t.title} className="anim-slide flex items-center gap-3 rounded-2xl bg-sky-50 p-3" style={{ animationDelay: `${i * 0.06}s` }}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-sun-300 to-sun-500 text-2xl shadow">{t.icon}</div>
             <div>
               <div className="font-display text-navy-800">{t.title}</div>
@@ -51,22 +48,6 @@ export function RulesScreen() {
             </div>
           </div>
         ))}
-      </div>
-      {/* barra de energia ilustrativa */}
-      <div className="mt-3 rounded-2xl bg-navy-800 p-3 text-white">
-        <div className="font-display mb-1 text-xs">BARRA DE ENERGIA</div>
-        <div className="flex h-4 overflow-hidden rounded-full border-2 border-white">
-          <div className="flex-[20] bg-red-500" />
-          <div className="flex-[29] bg-orange-400" />
-          <div className="flex-[2] bg-yellow-300" />
-          <div className="flex-[49] bg-gradient-to-r from-cyan-400 to-emerald-400" />
-        </div>
-        <div className="mt-1 flex justify-between text-[10px] font-bold">
-          <span>0–20% SEM FÔLEGO!</span>
-          <span>até 49% RESPIRE!</span>
-          <span>50% ATENÇÃO</span>
-          <span>51–100% NORMAL</span>
-        </div>
       </div>
       <div className="font-display text-stroke-thin anim-wiggle mt-3 rounded-2xl bg-gradient-to-r from-[#0b2a6b] to-[#1f6fe5] px-4 py-2 text-center text-base text-sun-400 sm:text-lg">
         SEGREDO DOS CAMPEÕES: ACERTE O VERDE, CONTROLE SUA ENERGIA E RESPIRE NA HORA CERTA!

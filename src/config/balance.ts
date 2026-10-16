@@ -44,29 +44,25 @@ export const SWIM = {
 };
 
 /**
- * Energia e respiração.
+ * Energia (fôlego) em 15 partes.
  * A energia NÃO se recupera sozinha: só a ação RESPIRAR devolve fôlego.
- * Ritmo ideal: ~5 braçadas no verde (5 x 10 = 50) e uma respiração (+50).
+ * Ritmo ideal: 5 braçadas no verde (15 → 10) e uma respiração (+5).
+ * Com 10/15 ou menos a nadadora começa a ficar lenta; em 0 ela se afoga.
  */
 export const ENERGY = {
-  max: 100,
+  max: 15,
   /** Custo por braçada, conforme a zona em que foi solta. */
-  costGreen: 10,
-  costYellow: 12,
-  costRed: 15,
+  costGreen: 1,
+  costYellow: 1.5,
+  costRed: 2,
   /** Toque rápido (braçada curta). */
-  costShort: 8,
-  /** Quanto uma respiração válida devolve (limitado a max). */
-  breathGain: 50,
+  costShort: 1,
+  /** Quanto uma respiração devolve (limitado a max). Respirar a mais não tem penalidade. */
+  breathGain: 5,
   /** Duração da respiração (s): a cabeça vira e não dá para iniciar braçada. */
   breathTime: 0.5,
-  /** Respirar com energia igual ou acima disto é "antecipado" (penalidade). */
-  earlyBreathAbove: 70,
-  /** Penalidade da respiração antecipada: perde o combo e freia um pouco. */
-  earlyBreathDrag: 1.8,
-  earlyBreathDragTime: 0.6,
-  /** Acima deste nível o nadador rende 100%. Abaixo, a eficiência cai aos poucos. */
-  fullAbove: 50,
+  /** Acima deste nível o nadador rende 100%. Em 10/15 ou menos a eficiência cai aos poucos. */
+  fullAbove: 11,
   /** Eficiência da braçada com energia zero. */
   emptyEfficiency: 0.3,
   /** Curvatura da queda (1 = linear, >1 cai mais forte perto de zero). */
@@ -75,10 +71,30 @@ export const ENERGY = {
   emptyExtraDrag: 0.9,
   /** Velocidade (por s) com que o corpo "sente" a mudança de energia: transição suave. */
   fatigueRate: 1.4,
-  /** Limiares visuais do HUD. */
-  warnAt: 50,
-  lowAt: 49,
-  criticalAt: 20,
+  /** Com isto ou menos: bordas escurecem, coração acelera, barra pisca. */
+  lowAt: 10,
+  /** Com isto ou menos: "SEM FÔLEGO!". */
+  criticalAt: 3,
+  /** Energia zerada = afogou (a partida recomeça do zero). */
+  drownAt: 0,
+};
+
+/** Combo x5 com braçadas no verde: desliza mais longe nas próximas braçadas. */
+export const GLIDE = {
+  /** A cada N braçadas seguidas no verde... */
+  every: 5,
+  /** ...as próximas N braçadas deslizam mais... */
+  strokes: 3,
+  /** ...com menos resistência da água. */
+  dragMul: 0.6,
+};
+
+/** No computador a zona verde é maior e mais perto do começo da barra. */
+export const DESKTOP_BAR = {
+  /** Aproxima as zonas do início (fração da posição original). */
+  shift: 0.72,
+  /** Alarga a zona verde. */
+  widen: 1.35,
 };
 
 /** Penalidades das zonas da barra de força (além da eficiência menor). */
@@ -263,7 +279,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       goodRate: 0.1,
       pauseMin: 0.08,
       pauseMax: 0.16,
-      breatheBelow: 52,
+      breatheBelow: 10,
       breathDelay: 0.08,
       breathPause: 0.45,
     },
@@ -303,7 +319,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       goodRate: 0.1,
       pauseMin: 0.08,
       pauseMax: 0.16,
-      breatheBelow: 52,
+      breatheBelow: 10,
       breathDelay: 0.08,
       breathPause: 0.45,
     },
@@ -343,7 +359,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       goodRate: 0.08,
       pauseMin: 0.07,
       pauseMax: 0.14,
-      breatheBelow: 52,
+      breatheBelow: 10,
       breathDelay: 0.08,
       breathPause: 0.45,
     },
@@ -377,7 +393,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     shark: {
       startGap: 11,
-      baseSpeed: 3.1,
+      baseSpeed: 3.25,
       speedRamp: 0.006,
       surgeAmp: 0.32,
       surgePeriod: 6.5,

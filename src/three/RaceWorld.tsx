@@ -76,6 +76,21 @@ function makeDrive(engine: RaceEngine, who: 'player' | 'opponent') {
       pose.pos.set(x, st.y, z);
     };
 
+    // ---------- Afogou: afunda devagar soltando bolhas ----------
+    if (state === 'drowned' && who === 'player') {
+      pose.anim = 'tread';
+      pose.prone = 0;
+      pose.gogglesDown = false;
+      st.y = Math.max(-3.6, Math.min(st.y, h + TREAD_Y) - dt * 0.55);
+      pose.pos.set(x, st.y, z);
+      st.wake -= dt;
+      if (st.wake <= 0) {
+        st.wake = 0.18;
+        splashBus.burst(x + (Math.random() - 0.5) * 0.4, 0.02, z, 0.15, 3);
+      }
+      return;
+    }
+
     // ---------- Fase do tubarão (jogadora sozinha) ----------
     if (engine.kind === 'shark') {
       if (state === 'intro') {

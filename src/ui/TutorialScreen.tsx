@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TUTORIAL_STEPS, TUTORIAL_TOTAL_BREATHS, TUTORIAL_TOTAL_GREEN, type RaceEngine } from '../game/raceEngine';
+import { TUTORIAL_STEPS, TUTORIAL_TOTAL_BREATHS, TUTORIAL_TOTAL_STROKES, type RaceEngine } from '../game/raceEngine';
 import { useEngineEvent, useTicker } from '../game/engineContext';
 import { bindingLabel } from '../game/keybindings';
 import { isTouch, useGame } from '../store/gameStore';
@@ -8,14 +8,15 @@ import { TouchControl, useKeyboard } from './Controls';
 import { Button } from './common';
 import { Confetti } from './Confetti';
 import { PauseMenu } from './RaceScreen';
+import { DrownOverlay } from './DrownOverlay';
 
 /** Como fazer cada ação, de acordo com o controle escolhido. */
 function useHowTo() {
   const scheme = useGame((s) => s.mobileScheme);
   const bindings = useGame((s) => s.bindings);
   if (!isTouch) return { swim: `segure ${bindingLabel(bindings.swim)}`, breathe: `aperte ${bindingLabel(bindings.breathe)}` };
-  if (scheme === 'buttons') return { swim: 'segure o botão NADAR (direita)', breathe: 'toque no botão RESPIRAR (esquerda)' };
-  return { swim: 'toque e segure a tela', breathe: 'arraste o dedo para cima' };
+  if (scheme === 'buttons') return { swim: 'segure NADAR', breathe: 'toque RESPIRAR' };
+  return { swim: 'segure a tela', breathe: 'arraste para cima' };
 }
 
 export function TutorialScreen({ engine }: { engine: RaceEngine }) {
@@ -42,32 +43,11 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
     return () => clearTimeout(id);
   }, [done, startPhase]);
 
+  // Etapas curtas: 10 braçadas → respirar → mais 10 braçadas.
   const STEPS = [
-    {
-      title: 'APRENDENDO A NADAR',
-      icon: '🏊',
-      text: `Para nadar, ${how.swim}: a barra de força vai enchendo. Solte quando o ponteiro estiver na ZONA VERDE ★. Fora do verde a braçada rende menos e gasta mais energia.`,
-    },
-    {
-      title: 'PRIMEIRA RESPIRAÇÃO',
-      icon: '🫁',
-      text: `Cada braçada no verde gasta 10% de energia. Agora respire: ${how.breathe}. Uma respiração devolve 50%!`,
-    },
-    {
-      title: 'MANTENDO O RITMO',
-      icon: '🔥',
-      text: 'Mais 5 braçadas no verde, sem pressa e sem demorar, para subir o COMBO. De olho na energia: abaixo de 50% a nadadora fica mais lenta.',
-    },
-    {
-      title: 'SEGUNDA RESPIRAÇÃO',
-      icon: '🫁',
-      text: `Energia em 50%? Hora de respirar de novo: ${how.breathe}. Lembre: precisa dar pelo menos uma braçada entre duas respirações.`,
-    },
-    {
-      title: 'PREPARAÇÃO PARA COMPETIR',
-      icon: '🏆',
-      text: 'Últimas 5 braçadas no verde! O segredo é: acerte o verde, controle a energia e respire a cada ~5 braçadas.',
-    },
+    { icon: '🏊', title: 'NADE', text: `${how.swim} e solte no VERDE` },
+    { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+5 de fôlego)` },
+    { icon: '🔥', title: 'MANTENHA O RITMO', text: 'acerte o verde e respire a cada 5' },
   ];
 
   const step = Math.min(engine.tutorialStep, STEPS.length - 1);
@@ -82,44 +62,28 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
       <HUD engine={engine} tutorial energyHighlight={isBreath && !done} />
       {!done && (
         <div className="pointer-events-none absolute inset-x-0 top-[64px] z-20 flex justify-center px-3 sm:top-[70px]">
-          <div key={step} className="card anim-pop pointer-events-auto w-full max-w-lg p-3 sm:p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-sun-300 to-sun-500 text-2xl shadow">
-                {info.icon}
-              </div>
-              <div className="flex-1">
-                <div className="font-display text-xs text-sky-600">
-                  TREINO • ETAPA {step + 1} DE {STEPS.length}
+          <div key={step} className="card anim-pop w-full max-w-md px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{info.icon}</span>
+              <div className="min-w-0 flex-1 leading-tight">
+                <div className="font-display text-sm text-navy-800 sm:text-base">
+                  <span className="text-sky-600">{step + 1}/{STEPS.length}</span> {info.title}
                 </div>
-                <div className="font-display text-xl leading-tight text-navy-800 sm:text-2xl">{info.title}</div>
-                <p className="mt-0.5 text-sm font-bold leading-snug text-navy-700">{info.text}</p>
+                <div className="truncate text-xs font-bold text-navy-700">{info.text}</div>
+              </div>
+              <div className="font-display shrink-0 rounded-xl bg-sky-100 px-2 py-1 text-center text-sm text-navy-800">
+                {isBreath ? '🫁' : '🏊'} {engine.tutorialCount}/{cfg.need}
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <div className="font-display whitespace-nowrap text-sm text-navy-800">
-                {isBreath ? `Respiração: ${engine.tutorialCount}/${cfg.need}` : `Braçadas corretas: ${engine.tutorialCount}/${cfg.need}`}
-              </div>
-              <div className="h-3 flex-1 overflow-hidden rounded-full bg-sky-100">
-                <div className="h-full rounded-full bg-gradient-to-r from-aqua-400 to-emerald-400 transition-[width]" style={{ width: `${progress * 100}%` }} />
-              </div>
-            </div>
-            <div className="mt-1.5 flex items-center justify-between text-xs font-bold text-sky-700">
-              <span>
-                Total: {Math.min(engine.tutorialGreen, TUTORIAL_TOTAL_GREEN)}/{TUTORIAL_TOTAL_GREEN} braçadas •{' '}
-                {Math.min(engine.tutorialBreaths, TUTORIAL_TOTAL_BREATHS)}/{TUTORIAL_TOTAL_BREATHS} respirações
-              </span>
-              <span className="flex gap-1">
-                {STEPS.map((_, i) => (
-                  <span key={i} className={`h-2.5 w-2.5 rounded-full ${i < step ? 'bg-emerald-400' : i === step ? 'bg-sun-400' : 'bg-sky-200'}`} />
-                ))}
-              </span>
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-sky-100">
+              <div className="h-full rounded-full bg-gradient-to-r from-aqua-400 to-emerald-400 transition-[width]" style={{ width: `${progress * 100}%` }} />
             </div>
           </div>
         </div>
       )}
       {!done && cheer > 0 && (
         <div key={cheer} className="font-display text-stroke anim-float pointer-events-none absolute left-1/2 top-[48%] z-30 -translate-x-1/2 whitespace-nowrap text-4xl text-[#3df58a]">
-          ✔ ETAPA CONCLUÍDA!
+          ✔ MUITO BEM!
         </div>
       )}
       {!done && (
@@ -136,11 +100,12 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
             <div className="font-display text-stroke text-6xl text-sun-400 sm:text-8xl">PARABÉNS!</div>
             <div className="font-display text-stroke mt-2 text-2xl text-white sm:text-4xl">VOCÊ ESTÁ PRONTO PARA DESAFIAR A FABIOLA!</div>
             <div className="font-display mt-4 inline-block rounded-2xl bg-navy-800/80 px-4 py-2 text-lg">
-              {TUTORIAL_TOTAL_GREEN} braçadas corretas • {TUTORIAL_TOTAL_BREATHS} respirações válidas ✔
+              {TUTORIAL_TOTAL_STROKES} braçadas • {TUTORIAL_TOTAL_BREATHS} respiração ✔
             </div>
           </div>
         </div>
       )}
+      <DrownOverlay engine={engine} />
       {paused && !done && <PauseMenu />}
     </>
   );

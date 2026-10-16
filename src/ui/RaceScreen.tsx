@@ -8,6 +8,7 @@ import { TouchControl, useKeyboard } from './Controls';
 import { AudioButton, Button, MedalRow } from './common';
 import { Confetti } from './Confetti';
 import { ControlsPanel } from './ControlsPanel';
+import { DrownOverlay } from './DrownOverlay';
 
 const PHASE_TAG: Record<string, { tag: string; emoji: string; goal: string }> = {
   pool: { tag: 'FASE 1', emoji: '🏊‍♀️', goal: 'Vença a Fabiola Molina nos 50 metros!' },
@@ -281,6 +282,7 @@ export function RaceScreen({ engine }: { engine: RaceEngine }) {
       <TouchControl engine={engine} />
       <HUD engine={engine} />
       <StageOverlay engine={engine} />
+      <DrownOverlay engine={engine} />
       {result && <ResultPanel engine={engine} result={result} />}
       {paused && !result && <PauseMenu />}
     </>
