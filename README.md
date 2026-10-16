@@ -1,5 +1,7 @@
 # Desafio Fabiola Molina
 
+Jogo de natação que gera cupons para o e-commerce Fabiola Molina.
+
 Jogo 3D de natação para navegador (desktop e celular), feito com React + TypeScript + Vite, Three.js / React Three Fiber / Drei, Tailwind CSS, Zustand e Web Audio API. Não tem backend nem banco de dados: o nome, a pontuação e o progresso ficam só na memória do jogo.
 
 ## Como rodar
