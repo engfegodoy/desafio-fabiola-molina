@@ -48,7 +48,7 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
   const STEPS = [
     { icon: '🏊', title: 'TOQUE PARA DAR UMA BRAÇADA', text: `${how.swim}: cada toque = 1 braçada` },
     { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+${ENERGY.breathGain}% de fôlego)` },
-    { icon: '🔥', title: 'MANTENHA O RITMO = COMBO', text: 'toque 2–3x por segundo: 4 PERFEITAS seguidas' },
+    { icon: '🔥', title: 'TOQUE RÁPIDO = PERFEITO', text: '5 toques por segundo: 4 PERFEITAS seguidas' },
   ];
 
   const step = Math.min(engine.tutorialStep, STEPS.length - 1);

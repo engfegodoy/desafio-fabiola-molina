@@ -41,7 +41,7 @@ export type EngineEvent =
   | { type: 'wave'; kind: 'front' | 'back' }
   | { type: 'comboLost' }
   | { type: 'breath'; who: 'player'; result: BreathResult }
-  | { type: 'energy'; level: 'low' | 'critical' }
+  | { type: 'energy'; level: 'warn' | 'low' | 'critical' }
   | { type: 'drowned' }
   | { type: 'sharkBreath' };
 
@@ -99,7 +99,7 @@ export class RaceEngine {
   /** Ritmo da fase (janela do PERFEITO etc.). */
   rhythm: RhythmConfig;
   /** Último nível de energia avisado (para não repetir alertas). */
-  private energyLevel: 'ok' | 'low' | 'critical' = 'ok';
+  private energyLevel: 'ok' | 'warn' | 'low' | 'critical' = 'ok';
 
   constructor(kind: StageKind, seed = Math.floor(Math.random() * 1e9), opts: EngineOptions = {}) {
     this.kind = kind;
@@ -167,13 +167,7 @@ export class RaceEngine {
     if (!r) return;
     this.emit({ type: 'stroke', who: 'player', result: r, x: this.playerX, z: -this.player.distance });
     if (r.comboBroken) this.emit({ type: 'comboLost' });
-    // Sem fôlego: afogou (tem prioridade sobre qualquer conquista do treino).
-    if (this.player.energy <= ENERGY.drownAt + 1e-6) {
-      this.drown();
-      return;
-    }
     if (this.kind === 'tutorial') this.tutorialOnStroke(r);
-    this.checkEnergyAlerts();
   }
 
   /** RESPIRAR: recupera fôlego sem parar a nadadora. */
@@ -194,8 +188,8 @@ export class RaceEngine {
   /** Avisos de energia: "PRECISA RESPIRAR!" com 20% ou menos, "SEM FÔLEGO!" com 10% ou menos. */
   private checkEnergyAlerts() {
     const e = this.player.energy;
-    const level = e <= ENERGY.criticalAt ? 'critical' : e <= ENERGY.lowAt ? 'low' : 'ok';
-    const rank = { ok: 0, low: 1, critical: 2 } as const;
+    const level = e <= ENERGY.criticalAt ? 'critical' : e <= ENERGY.lowAt ? 'low' : e < ENERGY.warnBelow ? 'warn' : 'ok';
+    const rank = { ok: 0, warn: 1, low: 2, critical: 3 } as const;
     if (rank[level] > rank[this.energyLevel] && level !== 'ok') this.emit({ type: 'energy', level });
     this.energyLevel = level;
   }
@@ -307,6 +301,14 @@ export class RaceEngine {
     const D = this.cfg.distance;
     const before = p.distance;
     p.update(dt, env);
+    // O fôlego cai enquanto nada: avisos e afogamento.
+    if (!p.finished) {
+      this.checkEnergyAlerts();
+      if (p.energy <= ENERGY.drownAt + 1e-6) {
+        this.drown();
+        return;
+      }
+    }
     if (this.kind === 'tutorial') {
       this.tutorialTick();
       return;

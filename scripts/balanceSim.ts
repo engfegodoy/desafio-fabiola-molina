@@ -19,16 +19,15 @@ interface Bot {
 }
 
 const BOTS: Bot[] = [
-  { name: 'craque', interval: 0.37, jitter: 0.025, breatheAt: 60 },
-  { name: 'bom', interval: 0.4, jitter: 0.05, breatheAt: 60 },
-  { name: 'erra-e-ajusta', interval: 0.42, jitter: 0.08, breatheAt: 50 },
-  { name: 'médio', interval: 0.5, jitter: 0.12, breatheAt: 30 },
-  { name: 'iniciante', interval: 0.65, jitter: 0.2, breatheAt: 15 },
-  { name: 'rápido (3,5/s)', interval: 0.28, jitter: 0.03, breatheAt: 60 },
-  { name: 'amassador', interval: 0.12, jitter: 0.02, breatheAt: 60 },
-  { name: 'sem-respirar', interval: 0.37, jitter: 0.025, breatheAt: -1 },
-  { name: 'respira-demais', interval: 0.37, jitter: 0.025, breatheAt: -1, breathEvery: 2 },
-];
+  { name: 'craque (6/s)', interval: 0.165, jitter: 0.015, breatheAt: 75 },
+  { name: 'bom (5/s)', interval: 0.2, jitter: 0.025, breatheAt: 75 },
+  { name: 'erra-e-ajusta', interval: 0.22, jitter: 0.04, breatheAt: 72 },
+  { name: 'médio (3,5/s)', interval: 0.29, jitter: 0.06, breatheAt: 55 },
+  { name: 'iniciante (2/s)', interval: 0.5, jitter: 0.12, breatheAt: 35 },
+  { name: 'amassador (10/s)', interval: 0.1, jitter: 0.01, breatheAt: 75 },
+  { name: 'sem-respirar', interval: 0.2, jitter: 0.025, breatheAt: -1 },
+  { name: 'respira-demais', interval: 0.2, jitter: 0.025, breatheAt: -1, breathEvery: 3 },
+]
 
 function gauss() {
   let u = 0;

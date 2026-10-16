@@ -105,7 +105,7 @@ const SCHEMES: { id: MobileScheme; title: string; icon: string; lines: string[] 
     id: 'buttons',
     title: 'Botões separados',
     icon: '🔘',
-    lines: ['Direita: TOQUE PARA NADAR (cada toque = 1 braçada)', 'Esquerda: toque RESPIRAR'],
+    lines: ['Direita: TOQUE PARA NADAR (mais rápido = mais veloz)', 'Esquerda: toque RESPIRAR'],
   },
   {
     id: 'gesture',

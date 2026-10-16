@@ -4,7 +4,7 @@
  * ============================================================
  *  Todos os números que controlam a dificuldade do jogo ficam aqui.
  *  Unidades: distância em metros, tempo em segundos, velocidade em m/s.
- *  O desafio combina ritmo constante de toques (combo) e fôlego (energia e respiração).
+ *  O desafio combina velocidade de toques (combo) e fôlego (energia e respiração).
  *  Rode `npm run sim` para simular corridas com jogadores-robô de
  *  diferentes habilidades e conferir se as provas continuam vencíveis.
  */
@@ -18,73 +18,74 @@ export type StageKind = 'tutorial' | 'pool' | 'seaDay' | 'seaNight' | 'shark';
  * é preciso tocar num ritmo constante (~2 a 3 toques por segundo).
  */
 export const SWIM = {
-  /** Distância (m) que cada braçada perfeita rende, sem combo. */
+  /** Distância (m) que cada braçada rende antes do limite de velocidade. */
   strokeDistance: 1.0,
   /** Freio da água (1/s): sem tocar, a nadadora perde a velocidade em ~1 s. */
   waterDecay: 3.0,
+  /** Braçada PERFEITA desliza melhor: o freio da água fica menor até o próximo toque. */
+  perfectGlide: 0.75,
   /** Velocidade mínima de deslize: nunca fica totalmente parada. */
   driftSpeed: 0.3,
-  /** Velocidade máxima (trava): mantém a duração das provas. */
-  maxSpeed: 4.2,
+  /** Velocidade máxima sem combo (trava): mantém a duração das provas. O combo aumenta este teto. */
+  maxSpeed: 3.0,
 
-  /** Combo: cada braçada no ritmo certo soma este bônus de distância (x5 = +24%). */
+  /** Combo: cada braçada PERFEITA soma este bônus no teto de velocidade (x5 = +24%). */
   comboStep: 0.06,
   comboMax: 5,
-  /** Ficar este tempo (s) sem uma braçada no ritmo zera o combo. */
+  /** Ficar este tempo (s) sem uma braçada perfeita zera o combo. */
   comboTimeout: 2.2,
 };
 
 /**
- * Ritmo: o intervalo entre dois toques define a qualidade da braçada.
- * Rápido demais (amassar o botão) rende pouco; devagar demais perde velocidade.
+ * Ritmo: quanto mais rápido você toca, mais rápido nada.
+ *   1–2 toques/s → "Devagar!"   3–4 toques/s → "Bom!"   5 ou mais → "PERFEITO!"
  */
 export interface RhythmConfig {
-  /** Abaixo disto (s) é "RÁPIDO DEMAIS!" (−1 no combo). */
-  rushBelow: number;
-  /** Janela do "PERFEITO!" (s entre toques): +1 no combo. */
-  perfectMin: number;
-  perfectMax: number;
-  /** Acima disto (s) é "DEVAGAR!" (−1 no combo). Entre perfeito e isto: "BOM!". */
+  /** Intervalo (s) acima do qual a braçada é "Devagar!" (−1 no combo). */
   slowAbove: number;
+  /** Intervalo (s) igual ou abaixo do qual é "PERFEITO!" (+1 no combo, desliza melhor). */
+  perfectBelow: number;
 }
 
 /** Rendimento de cada tipo de braçada (multiplica a distância). */
 export const QUALITY = {
   perfect: 1.0,
-  good: 0.85,
+  good: 0.9,
   slow: 0.8,
-  rushed: 0.25,
 };
 
 /**
  * Fôlego de 0 a 100%.
  * A energia NÃO se recupera sozinha: só a ação RESPIRAR devolve fôlego.
- * Cada braçada gasta 2% (sempre igual — combo não gasta mais); respirar devolve 25%.
- * Com 20% ou menos a barra fica vermelha, pisca e a nadadora vai ficando lenta; em 0% se afoga.
+ * O fôlego cai conforme a distância nadada (não importa o ritmo ou o combo):
+ * o ideal é respirar a cada ~30 m, quando ele chega em 75% — respirar devolve 25%.
+ * Abaixo de 75% a barra fica laranja e a nadadora vai perdendo velocidade aos poucos;
+ * com 20% ou menos fica vermelha e pisca; em 0% se afoga.
  */
 export const ENERGY = {
   max: 100,
-  /** Custo de cada braçada (o mesmo para qualquer ritmo ou combo). */
-  costStroke: 2,
-  costRushed: 2,
+  /** Ideal: respirar a cada X metros. */
+  breathEveryMeters: 30,
   /** Quanto uma respiração devolve (limitado a max). Respirar a mais não tem penalidade. */
   breathGain: 25,
   /** Duração da respiração (s): a cabeça vira e os toques nesse instante não contam. */
-  breathTime: 0.5,
-  /** Com isto ou menos a nadadora começa a ficar lenta (aos poucos). */
-  slowAt: 20,
-  /** Acima deste nível o nadador rende 100% (= slowAt + 1). */
-  fullAbove: 21,
+  breathTime: 0.22,
+  /** Abaixo disto a nadadora começa a ficar lenta (aos poucos) — hora de respirar. */
+  slowAt: 75,
+  /** Acima deste nível o nadador rende 100%. */
+  fullAbove: 75,
   /** Eficiência da braçada com energia zero. */
-  emptyEfficiency: 0.3,
+  emptyEfficiency: 0.2,
   /** Curvatura da queda (1 = linear, >1 cai mais forte perto de zero). */
-  curve: 1.25,
+  curve: 1.2,
   /** Resistência extra da água com energia zero (cansaço). */
   emptyExtraDrag: 0.9,
   /** Velocidade (por s) com que o corpo "sente" a mudança de energia: transição suave. */
   fatigueRate: 1.4,
   /** Com isto ou menos: barra VERMELHA piscando, bordas escurecem, coração acelera. */
   lowAt: 20,
+  /** Abaixo disto a barra fica laranja ("RESPIRE!"). */
+  warnBelow: 75,
   /** Com isto ou menos: "SEM FÔLEGO!". */
   criticalAt: 10,
   /** Energia zerada = afogou (a partida recomeça do zero). */
@@ -204,7 +205,7 @@ const NO_WAVES: WaveConfig = {
   ambient: 0.03,
 };
 
-const POOL_RHYTHM: RhythmConfig = { rushBelow: 0.26, perfectMin: 0.3, perfectMax: 0.55, slowAbove: 0.8 };
+const POOL_RHYTHM: RhythmConfig = { slowAbove: 0.4, perfectBelow: 0.24 };
 
 export const STAGES: Record<StageKind, StageConfig> = {
   tutorial: {
@@ -213,7 +214,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'TREINO',
     subtitle: 'Piscina de treinamento',
     distance: 9999,
-    rhythm: { rushBelow: 0.24, perfectMin: 0.28, perfectMax: 0.62, slowAbove: 0.9 },
+    rhythm: { slowAbove: 0.42, perfectBelow: 0.25 },
     waves: NO_WAVES,
     playerPower: 1,
   },
@@ -229,8 +230,8 @@ export const STAGES: Record<StageKind, StageConfig> = {
     opponent: {
       name: 'FABIOLA MOLINA',
       power: 1.02,
-      tapInterval: 0.44,
-      tapJitter: 0.03,
+      tapInterval: 0.23,
+      tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
       breathPause: 0.45,
@@ -242,7 +243,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'FASE 2 • CIRCUITO MARES: DIA',
     subtitle: '60 metros no mar aberto',
     distance: 60,
-    rhythm: { rushBelow: 0.26, perfectMin: 0.3, perfectMax: 0.54, slowAbove: 0.78 },
+    rhythm: { slowAbove: 0.4, perfectBelow: 0.235 },
     waves: {
       enabled: true,
       intervalMin: 3.2,
@@ -266,8 +267,8 @@ export const STAGES: Record<StageKind, StageConfig> = {
     opponent: {
       name: 'FABIOLA MOLINA',
       power: 1.03,
-      tapInterval: 0.435,
-      tapJitter: 0.03,
+      tapInterval: 0.2275,
+      tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
       breathPause: 0.45,
@@ -279,7 +280,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'FASE 3 • CIRCUITO MARES: NOITE',
     subtitle: '65 metros sob a luz da lua',
     distance: 65,
-    rhythm: { rushBelow: 0.27, perfectMin: 0.31, perfectMax: 0.52, slowAbove: 0.75 },
+    rhythm: { slowAbove: 0.4, perfectBelow: 0.23 },
     waves: {
       enabled: true,
       intervalMin: 2.6,
@@ -303,8 +304,8 @@ export const STAGES: Record<StageKind, StageConfig> = {
     opponent: {
       name: 'FABIOLA MOLINA',
       power: 0.97,
-      tapInterval: 0.435,
-      tapJitter: 0.03,
+      tapInterval: 0.2125,
+      tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
       breathPause: 0.45,
@@ -316,7 +317,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'FASE 4 • FUGA DO TUBARÃO',
     subtitle: 'Nade até a areia!',
     distance: 75,
-    rhythm: { rushBelow: 0.27, perfectMin: 0.31, perfectMax: 0.53, slowAbove: 0.76 },
+    rhythm: { slowAbove: 0.4, perfectBelow: 0.235 },
     waves: {
       enabled: true,
       intervalMin: 4,

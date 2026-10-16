@@ -56,7 +56,7 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
           else if (e.result.outcome === 'consecutive') audio.breathDenied();
           break;
         case 'energy':
-          audio.energyAlert(e.level);
+          if (e.level !== 'warn') audio.energyAlert(e.level);
           break;
         case 'wave':
           audio.wave(e.kind);

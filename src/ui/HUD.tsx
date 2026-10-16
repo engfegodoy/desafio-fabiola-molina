@@ -9,7 +9,7 @@ import { AudioButton, MedalRow, PauseButton } from './common';
 
 /* ===================== Barra de ritmo (velocidade) ===================== */
 /** Velocidade que enche a barra até o fim (≈ ritmo ideal com combo). */
-const SPEED_FULL = 2.9;
+const SPEED_FULL = 3.2;
 
 /**
  * Barra de ritmo: vai do vermelho (devagar) ao verde (rápido) e mostra a
@@ -41,7 +41,7 @@ export function PowerBar({ engine }: { engine: RaceEngine }) {
     <div className="hud-card w-full px-3 pb-2.5 pt-1.5">
       <div className="font-display flex items-center justify-between text-[11px] uppercase tracking-wide text-white/90 sm:text-xs">
         <span>Ritmo • velocidade</span>
-        <span className="normal-case text-[#3df58a]">{p.tapRate > 0.3 ? `${p.tapRate.toFixed(1)} toques/s` : 'toque 2–3x/s'}</span>
+        <span className="normal-case text-[#3df58a]">{p.tapRate > 0.3 ? `${p.tapRate.toFixed(1)} toques/s` : 'toque rápido!'}</span>
       </div>
       <div ref={wrap} className="relative mt-1.5" style={{ borderRadius: 999 }}>
         <div
@@ -82,6 +82,7 @@ export function ComboBox({ engine }: { engine: RaceEngine }) {
 export function energyState(e: number) {
   if (e <= ENERGY.criticalAt) return { key: 'critical', label: 'SEM FÔLEGO!', fill: '#ff3b3b', text: 'text-coral-400', blink: 'blink-strong' } as const;
   if (e <= ENERGY.lowAt) return { key: 'low', label: 'RESPIRE!', fill: '#ff3b3b', text: 'text-coral-400', blink: 'blink-soft' } as const;
+  if (e < ENERGY.warnBelow) return { key: 'warn', label: 'HORA DE RESPIRAR', fill: '#ff9a1a', text: 'text-orange-300', blink: '' } as const;
   return { key: 'ok', label: 'FÔLEGO', fill: '#3df5c8', text: 'text-white/90', blink: '' } as const;
 }
 
@@ -110,7 +111,7 @@ export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; h
         {Array.from({ length: SEGMENTS }, (_, i) => {
           const per = ENERGY.max / SEGMENTS;
           const fill = Math.max(0, Math.min(1, (p.energy - i * per) / per));
-          const slowZone = (i + 1) * per <= ENERGY.slowAt; // abaixo daqui a nadadora fica lenta
+          const slowZone = (i + 1) * per <= ENERGY.lowAt; // zona vermelha
           return (
             <div
               key={i}
@@ -156,7 +157,6 @@ const QUALITY_MSG: Record<string, { text: string; color: string; size: number }>
   perfect: { text: 'PERFEITO!', color: '#3df58a', size: 32 },
   good: { text: 'Bom!', color: '#ffd23f', size: 24 },
   slow: { text: 'Devagar!', color: '#ff9a3d', size: 24 },
-  rushed: { text: 'Rápido demais!', color: '#ff7b6b', size: 22 },
 };
 
 export function Feedback({ engine }: { engine: RaceEngine }) {
@@ -184,7 +184,8 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
     }
     if (e.type === 'sharkBreath') push('O TUBARÃO PAROU PARA RESPIRAR! 🦈', '#3df5ff', 22);
     if (e.type === 'energy') {
-      if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 26);
+      if (e.level === 'warn') push('HORA DE RESPIRAR!', '#ffb21f', 22);
+      else if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 26);
       else push('SEM FÔLEGO!', '#ff3b3b', 30);
     }
   });
@@ -343,8 +344,8 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
           {!isTouch && (
             <div className="hud-card hidden w-48 shrink-0 flex-col justify-center gap-0.5 self-stretch px-3 py-1.5 lg:flex">
               <div className="text-[11px] font-bold leading-tight text-white/90">
-                <span className="font-display text-sun-300">{bindingLabel(bindings.swim)}</span> = NADAR (toque{' '}
-                <span className="text-[#3df58a]">2–3x por segundo</span>)
+                <span className="font-display text-sun-300">{bindingLabel(bindings.swim)}</span> = NADAR (mais rápido ={' '}
+                <span className="text-[#3df58a]">5+/s PERFEITO</span>)
               </div>
               <div className="text-[11px] font-bold leading-tight text-white/90">
                 <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+{ENERGY.breathGain}% de fôlego)

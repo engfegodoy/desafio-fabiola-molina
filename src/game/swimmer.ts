@@ -1,7 +1,7 @@
 import { ENERGY, GLIDE, QUALITY, SWIM, type RhythmConfig } from '../config/balance.ts';
 
 /** Qualidade de uma braçada, pelo ritmo (intervalo desde o toque anterior). */
-export type StrokeQuality = 'perfect' | 'good' | 'slow' | 'rushed';
+export type StrokeQuality = 'perfect' | 'good' | 'slow';
 
 export interface StrokeResult {
   quality: StrokeQuality;
@@ -13,8 +13,6 @@ export interface StrokeResult {
   combo: number;
   comboBroken: boolean;
   comboUp: boolean;
-  /** Rápido demais (amassando o botão). */
-  rushed: boolean;
   /** Esta braçada desliza mais (bônus de 5 perfeitas seguidas). */
   glide: boolean;
   /** Acabou de ganhar o bônus de deslize. */
@@ -87,6 +85,10 @@ export class Swimmer {
   breathCount = 0;
   /** Braçadas desde a última respiração (precisa ser >= 1 para respirar de novo). */
   strokesSinceBreath = 1;
+  /** A última braçada foi perfeita: desliza melhor até o próximo toque. */
+  lastPerfect = false;
+  /** Teto de velocidade atual (sobe com o combo, cai com o cansaço e as ondas). */
+  speedCap = SWIM.maxSpeed;
   /** Braçadas perfeitas seguidas e bônus de deslize restante. */
   perfectStreak = 0;
   glideLeft = 0;
@@ -98,7 +100,6 @@ export class Swimmer {
     perfect: 0,
     good: 0,
     slow: 0,
-    rushed: 0,
     breaths: 0,
     ignoredBreaths: 0,
     lowEnergyTime: 0,
@@ -120,11 +121,10 @@ export class Swimmer {
     return this.breathTimer > 0;
   }
 
-  /** Classifica o ritmo pelo intervalo entre dois toques. */
+  /** Classifica pela velocidade dos toques: 1–2/s Devagar, 3–4/s Bom, 5+/s PERFEITO. */
   classify(interval: number): StrokeQuality {
     const r = this.rhythm;
-    if (interval < r.rushBelow) return 'rushed';
-    if (interval >= r.perfectMin && interval <= r.perfectMax) return 'perfect';
+    if (interval <= r.perfectBelow) return 'perfect';
     if (interval > r.slowAbove) return 'slow';
     return 'good';
   }
@@ -135,20 +135,22 @@ export class Swimmer {
    */
   stroke(env: SwimEnv = CALM_ENV): StrokeResult | null {
     if (this.finished || this.breathing) return null;
-    const interval = this.hasStroked ? this.sinceStroke : (this.rhythm.perfectMin + this.rhythm.perfectMax) / 2;
+    // Depois de respirar, o tempo da respiração não conta contra o ritmo.
+    const raw = this.strokesSinceBreath === 0 ? this.sinceStroke - ENERGY.breathTime : this.sinceStroke;
+    const interval = this.hasStroked ? Math.max(0.05, raw) : this.rhythm.slowAbove;
     // A primeira braçada (e a primeira depois de respirar) não é julgada como "devagar".
-    const judged = this.hasStroked && this.strokesSinceBreath > 0 ? this.classify(interval) : 'good';
+    const judged = this.hasStroked ? this.classify(interval) : 'good';
     const quality: StrokeQuality = judged === 'slow' && this.strokesSinceBreath === 0 ? 'good' : judged;
     this.hasStroked = true;
 
-    // Combo: ritmo perfeito sobe 1; errar (devagar ou rápido demais) só tira 1.
+    // Combo: PERFEITO sobe 1; devagar só tira 1.
     let comboUp = false;
     const before = this.combo;
     if (quality === 'perfect') {
       this.combo = Math.min(SWIM.comboMax, this.combo + 1);
       comboUp = this.combo >= 2 && this.combo > before;
       this.sinceHit = 0;
-    } else if (quality === 'slow' || quality === 'rushed') {
+    } else if (quality === 'slow') {
       this.combo = Math.max(0, this.combo - 1);
     } else {
       this.sinceHit = 0;
@@ -174,10 +176,12 @@ export class Swimmer {
     const efficiency = qualityEff * this.comboMultiplier * env.strokeMul * this.power * this.vigor;
     // Impulso instantâneo: com o freio da água, cada braçada rende ~strokeDistance metros.
     const impulse = SWIM.waterDecay * SWIM.strokeDistance * efficiency;
-    this.speed = Math.min(SWIM.maxSpeed, this.speed + impulse);
-
-    const cost = quality === 'rushed' ? ENERGY.costRushed : ENERGY.costStroke;
-    this.energy = Math.max(0, this.energy - cost);
+    // Quanto mais rápido tocar, mais rápido nada — até o teto (que sobe com o combo).
+    this.speedCap = SWIM.maxSpeed * this.comboMultiplier * env.strokeMul * this.power * this.vigor;
+    if (this.speed < this.speedCap) this.speed = Math.min(this.speedCap, this.speed + impulse);
+    this.lastPerfect = quality === 'perfect';
+    // O fôlego cai pela distância nadada (no update), não por braçada.
+    const cost = 0;
     this.tapRate += (1 / Math.max(0.12, interval) - this.tapRate) * 0.35;
     this.sinceStroke = 0;
     this.strokeCount++;
@@ -196,7 +200,6 @@ export class Swimmer {
       combo: this.combo,
       comboBroken,
       comboUp,
-      rushed: quality === 'rushed',
       glide: this.gliding,
       glideEarned,
       energyCost: cost,
@@ -240,13 +243,23 @@ export class Swimmer {
     const tired = (1 - this.vigor) / (1 - ENERGY.emptyEfficiency);
 
     // Freio da água: a velocidade cai rápido até o deslize mínimo (nunca para de vez).
-    const decay = SWIM.waterDecay * env.dragMul * (1 + ENERGY.emptyExtraDrag * tired) * (this.gliding ? GLIDE.dragMul : 1);
+    // Braçada perfeita e o bônus de 5 perfeitas seguidas deslizam melhor.
+    const decay =
+      SWIM.waterDecay *
+      env.dragMul *
+      (1 + ENERGY.emptyExtraDrag * tired) *
+      (this.gliding ? GLIDE.dragMul : 1) *
+      (this.lastPerfect ? SWIM.perfectGlide : 1);
     const floor = this.hasStroked && !this.finished ? SWIM.driftSpeed : 0;
     let v = this.speed;
     if (v > floor) v = floor + (v - floor) * Math.exp(-decay * dt);
     v += env.push * dt;
     this.speed = Math.max(0, Math.min(SWIM.maxSpeed, v));
     this.distance += this.speed * dt;
+    // Fôlego cai com a distância nadada (ideal: respirar a cada ~30 m), igual para qualquer ritmo.
+    if (this.hasStroked && !this.finished) {
+      this.energy = Math.max(0, this.energy - this.speed * dt * (ENERGY.breathGain / ENERGY.breathEveryMeters));
+    }
     this.smoothSpeed += (this.speed - this.smoothSpeed) * Math.min(1, dt * 3);
 
     if (!this.finished) {

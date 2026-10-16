@@ -24,19 +24,18 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
 
 ## Controles
 
-- **Computador:** **ESPAÇO** = NADAR (cada aperto é uma braçada na hora, ritmo ideal de 2–3 por segundo), **CTRL** ou **↑** = RESPIRAR. **P** ou **Esc** pausa. As teclas podem ser trocadas na tela de controles ou na pausa (⚙ Controles); NADAR e RESPIRAR não podem usar a mesma tecla.
+- **Computador:** **ESPAÇO** = NADAR (cada aperto é uma braçada na hora; quanto mais rápido, mais rápido nada), **CTRL** ou **↑** = RESPIRAR. **P** ou **Esc** pausa. As teclas podem ser trocadas na tela de controles ou na pausa (⚙ Controles); NADAR e RESPIRAR não podem usar a mesma tecla.
 - **Celular/tablet:** dois modos, escolhidos antes do treino:
   - **Botões separados:** TOQUE PARA NADAR à direita, RESPIRAR à esquerda.
   - **Toque e gesto:** cada toque em qualquer lugar = braçada; arraste para cima (mínimo 60 px) = respirar.
 
 ## Fôlego e respiração
 
-- O fôlego vai de **0 a 100%** e não volta sozinho. Cada braçada gasta **2%** (sempre igual, com ou sem combo).
-- **RESPIRAR** devolve **25%**. Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
-- Com **20% ou menos** a barra fica vermelha e pisca, as bordas da tela escurecem, o coração acelera e a nadadora fica lenta aos poucos.
+- O fôlego vai de **0 a 100%** e cai conforme a distância nadada (igual para qualquer ritmo ou combo). O ideal é **respirar a cada ~30 m**: respirar devolve **25%**.
+- Abaixo de **75%** a barra fica laranja e a nadadora perde velocidade aos poucos; com **20% ou menos** fica vermelha e pisca, as bordas da tela escurecem e o coração acelera.
 - Se o fôlego **zerar**: "Oh não! Você se afogou!" e o jogo recomeça do zero (no treino, recomeça o treino).
 - **Deslize:** a cada 5 braçadas perfeitas seguidas, as 3 próximas deslizam mais longe.
-- **Ritmo (estilo Flappy Bird):** cada toque dá um impulso na hora e a água freia rápido entre os toques. A barra de ritmo (vermelho → verde) mostra a velocidade. Toques no ritmo certo = PERFEITO (+1 combo); devagar ou rápido demais = −1 combo. Cada braçada rende cerca de 1 m.
+- **Toques (estilo Flappy Bird):** cada toque dá um impulso na hora e a água freia rápido entre os toques. **Quanto mais rápido tocar, mais rápido nada** (até o limite de velocidade). 1–2 toques/s = Devagar! (−1 combo), 3–4/s = Bom!, 5 ou mais = PERFEITO! (+1 combo, desliza melhor e o combo aumenta o limite de velocidade). A barra de ritmo (vermelho → verde) mostra a velocidade.
 - A Fabiola respira (com uma pequena pausa) e o tubarão para para respirar a cada 6 s.
 - Todos os números ficam em `SWIM`, `QUALITY`, `ENERGY`, `GLIDE` e no `rhythm` de cada fase em `src/config/balance.ts`.
 

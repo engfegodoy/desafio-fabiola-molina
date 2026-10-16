@@ -75,7 +75,7 @@ function StageOverlay({ engine }: { engine: RaceEngine }) {
       )}
       {s === 'racing' && engine.time < 3.5 && engine.kind === 'pool' && (
         <div className="font-display anim-slide absolute top-[24%] rounded-2xl bg-navy-800/80 px-4 py-2 text-center text-base sm:text-xl">
-          Toque <span className="text-[#3df58a]">2–3x por segundo</span> para nadar!
+          Toque rápido! <span className="text-[#3df58a]">5x por segundo = PERFEITO</span>
         </div>
       )}
       {oppDone && !engine.player.finished && (s === 'racing' || s === 'finishing') && (
