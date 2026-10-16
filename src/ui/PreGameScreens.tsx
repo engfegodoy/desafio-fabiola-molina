@@ -30,8 +30,8 @@ export function RulesScreen() {
 
   const tips = [
     { icon: '🏊', title: 'Nade no verde', text: `Segure (${swimHow}) e solte no VERDE.` },
-    { icon: '🫁', title: 'Respire a cada 5', text: `Cada braçada gasta 1 de fôlego. RESPIRAR (${breathHow}) devolve 5.` },
-    { icon: '🐢', title: 'Fôlego baixo', text: `Com ${ENERGY.lowAt}/${ENERGY.max} você fica lento. Se zerar, se afoga e recomeça!` },
+    { icon: '🫁', title: `Respire a cada ${ENERGY.breathGain}`, text: `Cada braçada gasta 1 de fôlego. RESPIRAR (${breathHow}) devolve ${ENERGY.breathGain}.` },
+    { icon: '🐢', title: 'Fôlego baixo', text: `Em ${ENERGY.lowAt}/${ENERGY.max} a barra pisca; em ${ENERGY.slowAt} você fica lento. Zerou? Afogou!` },
     { icon: '🌊', title: 'Combo x5', text: '5 seguidas no verde: desliza mais nas 3 próximas.' },
   ];
 

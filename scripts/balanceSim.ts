@@ -24,16 +24,16 @@ interface Bot {
 }
 
 const BOTS: Bot[] = [
-  { name: 'craque', sigma: 0.03, pause: 0.1, breatheAt: 10 },
-  { name: 'bom', sigma: 0.05, pause: 0.13, breatheAt: 10 },
-  { name: 'bom (computador)', sigma: 0.05, pause: 0.13, breatheAt: 10, desktop: true },
-  { name: 'erra-e-ajusta', sigma: 0.065, pause: 0.15, breatheAt: 10 },
-  { name: 'médio', sigma: 0.08, pause: 0.18, breatheAt: 8 },
-  { name: 'iniciante', sigma: 0.12, pause: 0.24, breatheAt: 6 },
+  { name: 'craque', sigma: 0.03, pause: 0.1, breatheAt: 13 },
+  { name: 'bom', sigma: 0.05, pause: 0.13, breatheAt: 13 },
+  { name: 'bom (computador)', sigma: 0.05, pause: 0.13, breatheAt: 13, desktop: true },
+  { name: 'erra-e-ajusta', sigma: 0.065, pause: 0.15, breatheAt: 13 },
+  { name: 'médio', sigma: 0.08, pause: 0.18, breatheAt: 10 },
+  { name: 'iniciante', sigma: 0.12, pause: 0.24, breatheAt: 7 },
   { name: 'sem-respirar', sigma: 0.03, pause: 0.1, breatheAt: -1 },
   { name: 'respira-demais', sigma: 0.03, pause: 0.1, breatheAt: -1, breathEvery: 2 },
   { name: 'respira-tarde', sigma: 0.03, pause: 0.1, breatheAt: 3 },
-  { name: 'só-toques', sigma: 0, pause: 0.12, breatheAt: 10, spam: true },
+  { name: 'só-toques', sigma: 0, pause: 0.12, breatheAt: 13, spam: true },
 ];
 
 function gauss() {

@@ -50,7 +50,7 @@ export class OpponentAI {
           this.waitTimer -= dt;
           if (this.waitTimer <= 0) {
             if (s.energy <= this.cfg.breatheBelow && s.strokesSinceBreath >= 1) {
-              // Respira na hora certa (~a cada 5 braçadas) e retoma o ritmo.
+              // Respira na hora certa (~a cada 7 braçadas) e retoma o ritmo.
               s.breathe();
               this.waitTimer = ENERGY.breathTime + this.cfg.breathPause + this.cfg.breathDelay * (0.5 + this.rng());
             } else {

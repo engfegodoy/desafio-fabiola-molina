@@ -31,9 +31,9 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
 
 ## Fôlego e respiração
 
-- O fôlego tem **15 partes** e não volta sozinho. Cada braçada gasta 1 (amarelo 1,5; vermelho 2).
-- **RESPIRAR** devolve 5. Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
-- Com **10/15 ou menos** a nadadora fica lenta aos poucos, as bordas da tela escurecem, o coração acelera e a barra pisca.
+- O fôlego tem **20 partes** e não volta sozinho. Cada braçada gasta 1 (amarelo 1,5; vermelho 2).
+- **RESPIRAR** devolve 7. Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
+- Com **10/20** a barra pisca, as bordas da tela escurecem e o coração acelera. Com **7/20 ou menos** a nadadora fica lenta aos poucos.
 - Se o fôlego **zerar**: "Oh não! Você se afogou!" e o jogo recomeça do zero (no treino, recomeça o treino).
 - **Combo x5:** a cada 5 braçadas seguidas no verde, as 3 próximas deslizam mais longe.
 - No **computador** a zona verde é maior e mais perto do começo da barra.

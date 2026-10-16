@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ENERGY } from '../config/balance';
 import { TUTORIAL_STEPS, TUTORIAL_TOTAL_BREATHS, TUTORIAL_TOTAL_STROKES, type RaceEngine } from '../game/raceEngine';
 import { useEngineEvent, useTicker } from '../game/engineContext';
 import { bindingLabel } from '../game/keybindings';
@@ -46,8 +47,8 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
   // Etapas curtas: 10 braçadas → respirar → mais 10 braçadas.
   const STEPS = [
     { icon: '🏊', title: 'NADE', text: `${how.swim} e solte no VERDE` },
-    { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+5 de fôlego)` },
-    { icon: '🔥', title: 'MANTENHA O RITMO', text: 'acerte o verde e respire a cada 5' },
+    { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+${ENERGY.breathGain} de fôlego)` },
+    { icon: '🔥', title: 'MANTENHA O RITMO', text: `acerte o verde e respire a cada ${ENERGY.breathGain}` },
   ];
 
   const step = Math.min(engine.tutorialStep, STEPS.length - 1);

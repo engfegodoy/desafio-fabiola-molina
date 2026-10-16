@@ -234,7 +234,7 @@ export class RaceEngine {
     this.emit({ type: 'drowned' });
   }
 
-  /** Avisos de energia: "PRECISA RESPIRAR!" com 10/15 ou menos, "SEM FÔLEGO!" perto de zero. */
+  /** Avisos de energia: "PRECISA RESPIRAR!" com 10/20 ou menos, "SEM FÔLEGO!" perto de zero. */
   private checkEnergyAlerts() {
     const e = this.player.energy;
     const level = e <= ENERGY.criticalAt ? 'critical' : e <= ENERGY.lowAt ? 'low' : 'ok';
@@ -444,7 +444,7 @@ export class RaceEngine {
     const avgSpeed = st.raceTime > 0 ? st.speedSum / st.raceTime : 0;
     const breakdown: ScoreBreakdown = {
       velocidade: Math.round(Math.min(1, avgSpeed / 2.4) * 400),
-      // Resistência: tempo com fôlego (energia acima de 10/15).
+      // Resistência: tempo com fôlego (energia acima de 10/20).
       resistencia: Math.round((1 - Math.min(1, st.lowEnergyTime / Math.max(1, st.raceTime))) * 300),
       tecnica: Math.round(
         longStrokes > 0 ? Math.min(1, (st.perfect + st.great * 0.7 + st.good * 0.3) / longStrokes) * 400 : 0,

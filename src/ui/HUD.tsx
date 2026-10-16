@@ -135,7 +135,7 @@ export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; h
       <div className={`mt-1 flex h-4 gap-[2px] sm:h-5 ${st.blink}`}>
         {Array.from({ length: ENERGY.max }, (_, i) => {
           const fill = Math.max(0, Math.min(1, p.energy - i));
-          const slowZone = i < ENERGY.lowAt; // partes que, ao acabar, já deixam a nadadora lenta
+          const slowZone = i < ENERGY.slowAt; // partes que, ao acabar, já deixam a nadadora lenta
           return (
             <div
               key={i}
@@ -153,7 +153,7 @@ export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; h
   );
 }
 
-/** Bordas da tela escurecendo quando o fôlego chega a 10/15 (mais escuro quanto menos energia). */
+/** Bordas da tela escurecendo quando o fôlego chega a 10/20 (mais escuro quanto menos energia). */
 export function BreathVignette({ engine }: { engine: RaceEngine }) {
   const e = engine.player.energy;
   const racing = engine.controllable;
@@ -378,7 +378,7 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
                 <span className="text-[#3df58a]">verde</span> = NADAR
               </div>
               <div className="text-[11px] font-bold leading-tight text-white/90">
-                <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+5 de fôlego)
+                <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+{ENERGY.breathGain} de fôlego)
               </div>
             </div>
           )}

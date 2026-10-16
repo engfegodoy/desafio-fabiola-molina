@@ -44,13 +44,13 @@ export const SWIM = {
 };
 
 /**
- * Energia (fôlego) em 15 partes.
+ * Energia (fôlego) em 20 partes.
  * A energia NÃO se recupera sozinha: só a ação RESPIRAR devolve fôlego.
- * Ritmo ideal: 5 braçadas no verde (15 → 10) e uma respiração (+5).
- * Com 10/15 ou menos a nadadora começa a ficar lenta; em 0 ela se afoga.
+ * Ritmo ideal: 7 braçadas no verde (20 → 13) e uma respiração (+7).
+ * Com 10/20 a barra pisca (alerta); com 7/20 ou menos fica lenta; em 0 se afoga.
  */
 export const ENERGY = {
-  max: 15,
+  max: 20,
   /** Custo por braçada, conforme a zona em que foi solta. */
   costGreen: 1,
   costYellow: 1.5,
@@ -58,11 +58,13 @@ export const ENERGY = {
   /** Toque rápido (braçada curta). */
   costShort: 1,
   /** Quanto uma respiração devolve (limitado a max). Respirar a mais não tem penalidade. */
-  breathGain: 5,
+  breathGain: 7,
   /** Duração da respiração (s): a cabeça vira e não dá para iniciar braçada. */
   breathTime: 0.5,
-  /** Acima deste nível o nadador rende 100%. Em 10/15 ou menos a eficiência cai aos poucos. */
-  fullAbove: 11,
+  /** Com isto ou menos a nadadora começa a ficar lenta (aos poucos). */
+  slowAt: 7,
+  /** Acima deste nível o nadador rende 100% (= slowAt + 1). */
+  fullAbove: 8,
   /** Eficiência da braçada com energia zero. */
   emptyEfficiency: 0.3,
   /** Curvatura da queda (1 = linear, >1 cai mais forte perto de zero). */
@@ -71,7 +73,7 @@ export const ENERGY = {
   emptyExtraDrag: 0.9,
   /** Velocidade (por s) com que o corpo "sente" a mudança de energia: transição suave. */
   fatigueRate: 1.4,
-  /** Com isto ou menos: bordas escurecem, coração acelera, barra pisca. */
+  /** Com isto ou menos: alerta — bordas escurecem, coração acelera, barra pisca. */
   lowAt: 10,
   /** Com isto ou menos: "SEM FÔLEGO!". */
   criticalAt: 3,
@@ -273,13 +275,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.045,
+      power: 1.02,
       perfectRate: 0.5,
       greatRate: 0.38,
       goodRate: 0.1,
       pauseMin: 0.08,
       pauseMax: 0.16,
-      breatheBelow: 10,
+      breatheBelow: 13,
       breathDelay: 0.08,
       breathPause: 0.45,
     },
@@ -313,13 +315,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.06,
+      power: 1.03,
       perfectRate: 0.5,
       greatRate: 0.38,
       goodRate: 0.1,
       pauseMin: 0.08,
       pauseMax: 0.16,
-      breatheBelow: 10,
+      breatheBelow: 13,
       breathDelay: 0.08,
       breathPause: 0.45,
     },
@@ -353,13 +355,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.065,
+      power: 0.97,
       perfectRate: 0.56,
       greatRate: 0.34,
       goodRate: 0.08,
       pauseMin: 0.07,
       pauseMax: 0.14,
-      breatheBelow: 10,
+      breatheBelow: 13,
       breathDelay: 0.08,
       breathPause: 0.45,
     },
@@ -393,7 +395,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     shark: {
       startGap: 11,
-      baseSpeed: 3.25,
+      baseSpeed: 3.35,
       speedRamp: 0.006,
       surgeAmp: 0.32,
       surgePeriod: 6.5,
