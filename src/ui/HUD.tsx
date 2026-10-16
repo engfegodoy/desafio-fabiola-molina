@@ -81,11 +81,12 @@ export function ComboBox({ engine }: { engine: RaceEngine }) {
 /* ===================== Energia ===================== */
 export function energyState(e: number) {
   if (e <= ENERGY.criticalAt) return { key: 'critical', label: 'SEM FÔLEGO!', fill: '#ff3b3b', text: 'text-coral-400', blink: 'blink-strong' } as const;
-  if (e <= ENERGY.lowAt) return { key: 'low', label: 'RESPIRE!', fill: '#ff9a1a', text: 'text-orange-300', blink: 'blink-soft' } as const;
+  if (e <= ENERGY.lowAt) return { key: 'low', label: 'RESPIRE!', fill: '#ff3b3b', text: 'text-coral-400', blink: 'blink-soft' } as const;
   return { key: 'ok', label: 'FÔLEGO', fill: '#3df5c8', text: 'text-white/90', blink: '' } as const;
 }
 
-/** Barra de fôlego em 15 partes: cada braçada gasta 1, respirar devolve 5. */
+/** Barra de fôlego de 0 a 100% (20 blocos de 5%): cada braçada gasta 2%, respirar devolve 25%. */
+const SEGMENTS = 20;
 export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; highlight?: boolean }) {
   const p = engine.player;
   const st = energyState(p.energy);
@@ -93,7 +94,7 @@ export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; h
   useEngineEvent(engine, (e) => {
     if (e.type === 'breath' && e.result.valid) setGlow((g) => g + 1);
   });
-  const shown = Math.max(0, Math.round(p.energy * 2) / 2);
+  const shown = Math.max(0, Math.round(p.energy));
   return (
     <div
       key={glow}
@@ -102,13 +103,14 @@ export function EnergyBar({ engine, highlight = false }: { engine: RaceEngine; h
       <div className="font-display flex items-center justify-between text-[11px] uppercase sm:text-xs">
         <span className={`${st.text} ${st.blink}`}>🫁 {st.label}</span>
         <span className={`tabular-nums ${st.text}`}>
-          {Number.isInteger(shown) ? shown : shown.toFixed(1)}/{ENERGY.max}
+          {shown}%
         </span>
       </div>
       <div className={`mt-1 flex h-4 gap-[2px] sm:h-5 ${st.blink}`}>
-        {Array.from({ length: ENERGY.max }, (_, i) => {
-          const fill = Math.max(0, Math.min(1, p.energy - i));
-          const slowZone = i < ENERGY.slowAt; // partes que, ao acabar, já deixam a nadadora lenta
+        {Array.from({ length: SEGMENTS }, (_, i) => {
+          const per = ENERGY.max / SEGMENTS;
+          const fill = Math.max(0, Math.min(1, (p.energy - i * per) / per));
+          const slowZone = (i + 1) * per <= ENERGY.slowAt; // abaixo daqui a nadadora fica lenta
           return (
             <div
               key={i}
@@ -177,7 +179,7 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
     }
     if (e.type === 'breath') {
       const o = e.result.outcome;
-      if (o === 'ok' && e.result.gain > 0) push(`+${Math.round(e.result.gain)} FÔLEGO!`, '#3df5ff', 28);
+      if (o === 'ok' && e.result.gain > 0) push(`+${Math.round(e.result.gain)}% FÔLEGO!`, '#3df5ff', 28);
       else if (o === 'consecutive') push('DÊ UMA BRAÇADA ANTES DE RESPIRAR!', '#ff7b6b', 20);
     }
     if (e.type === 'sharkBreath') push('O TUBARÃO PAROU PARA RESPIRAR! 🦈', '#3df5ff', 22);
@@ -345,7 +347,7 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
                 <span className="text-[#3df58a]">2–3x por segundo</span>)
               </div>
               <div className="text-[11px] font-bold leading-tight text-white/90">
-                <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+{ENERGY.breathGain} de fôlego)
+                <span className="font-display text-aqua-300">{bindingLabel(bindings.breathe)}</span> = RESPIRAR (+{ENERGY.breathGain}% de fôlego)
               </div>
             </div>
           )}

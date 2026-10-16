@@ -19,13 +19,13 @@ interface Bot {
 }
 
 const BOTS: Bot[] = [
-  { name: 'craque', interval: 0.37, jitter: 0.025, breatheAt: 10 },
-  { name: 'bom', interval: 0.4, jitter: 0.05, breatheAt: 10 },
-  { name: 'erra-e-ajusta', interval: 0.42, jitter: 0.08, breatheAt: 10 },
-  { name: 'médio', interval: 0.5, jitter: 0.12, breatheAt: 7 },
-  { name: 'iniciante', interval: 0.65, jitter: 0.2, breatheAt: 4 },
-  { name: 'rápido (3,5/s)', interval: 0.28, jitter: 0.03, breatheAt: 10 },
-  { name: 'amassador', interval: 0.12, jitter: 0.02, breatheAt: 10 },
+  { name: 'craque', interval: 0.37, jitter: 0.025, breatheAt: 60 },
+  { name: 'bom', interval: 0.4, jitter: 0.05, breatheAt: 60 },
+  { name: 'erra-e-ajusta', interval: 0.42, jitter: 0.08, breatheAt: 50 },
+  { name: 'médio', interval: 0.5, jitter: 0.12, breatheAt: 30 },
+  { name: 'iniciante', interval: 0.65, jitter: 0.2, breatheAt: 15 },
+  { name: 'rápido (3,5/s)', interval: 0.28, jitter: 0.03, breatheAt: 60 },
+  { name: 'amassador', interval: 0.12, jitter: 0.02, breatheAt: 60 },
   { name: 'sem-respirar', interval: 0.37, jitter: 0.025, breatheAt: -1 },
   { name: 'respira-demais', interval: 0.37, jitter: 0.025, breatheAt: -1, breathEvery: 2 },
 ];

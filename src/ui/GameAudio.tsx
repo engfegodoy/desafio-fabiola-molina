@@ -89,7 +89,7 @@ export function GameAudio({ engine }: { engine: RaceEngine | null }) {
     // Linha do tempo sonora da cena do barco e do tubarão
     let beat = 0;
     const id = window.setInterval(() => {
-      // Coração: com 10/20 ou menos de fôlego, bate mais alto e mais rápido.
+      // Coração: com 20% ou menos de fôlego, bate mais alto e mais rápido.
       const en = engine.player.energy;
       if (engine.controllable && en <= ENERGY.lowAt && !useGame.getState().paused) {
         const k = 1 - en / ENERGY.lowAt;

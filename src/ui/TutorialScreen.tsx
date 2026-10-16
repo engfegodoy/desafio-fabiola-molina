@@ -47,7 +47,7 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
   // Etapas curtas: 10 braçadas → respirar → mais 10 braçadas.
   const STEPS = [
     { icon: '🏊', title: 'TOQUE PARA DAR UMA BRAÇADA', text: `${how.swim}: cada toque = 1 braçada` },
-    { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+${ENERGY.breathGain} de fôlego)` },
+    { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+${ENERGY.breathGain}% de fôlego)` },
     { icon: '🔥', title: 'MANTENHA O RITMO = COMBO', text: 'toque 2–3x por segundo: 4 PERFEITAS seguidas' },
   ];
 

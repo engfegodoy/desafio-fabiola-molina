@@ -191,7 +191,7 @@ export class RaceEngine {
     this.emit({ type: 'drowned' });
   }
 
-  /** Avisos de energia: "PRECISA RESPIRAR!" com 10/20 ou menos, "SEM FÔLEGO!" perto de zero. */
+  /** Avisos de energia: "PRECISA RESPIRAR!" com 20% ou menos, "SEM FÔLEGO!" com 10% ou menos. */
   private checkEnergyAlerts() {
     const e = this.player.energy;
     const level = e <= ENERGY.criticalAt ? 'critical' : e <= ENERGY.lowAt ? 'low' : 'ok';

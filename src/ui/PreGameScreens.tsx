@@ -30,8 +30,8 @@ export function RulesScreen() {
 
   const tips = [
     { icon: '🏊', title: 'Toque para nadar', text: `Cada toque (${swimHow}) = 1 braçada. Ritmo constante: 2–3 por segundo.` },
-    { icon: '🫁', title: `Respire a cada ${ENERGY.breathGain}`, text: `Cada braçada gasta 1 de fôlego. RESPIRAR (${breathHow}) devolve ${ENERGY.breathGain}.` },
-    { icon: '🐢', title: 'Fôlego baixo', text: `Em ${ENERGY.lowAt}/${ENERGY.max} a barra pisca; em ${ENERGY.slowAt} você fica lento. Zerou? Afogou!` },
+    { icon: '🫁', title: 'Respire sempre', text: `Cada braçada gasta ${ENERGY.costStroke}% de fôlego. RESPIRAR (${breathHow}) devolve ${ENERGY.breathGain}%.` },
+    { icon: '🐢', title: 'Fôlego baixo', text: `Em ${ENERGY.lowAt}% a barra fica vermelha e você fica lento. Zerou? Afogou!` },
     { icon: '🌊', title: 'Combo', text: 'Ritmo PERFEITO sobe o combo. 5 seguidas: desliza mais nas 3 próximas.' },
   ];
 

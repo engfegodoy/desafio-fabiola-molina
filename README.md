@@ -31,9 +31,9 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
 
 ## Fôlego e respiração
 
-- O fôlego tem **20 partes** e não volta sozinho. Cada braçada gasta 1 (amarelo 1,5; vermelho 2).
-- **RESPIRAR** devolve 10 (respire a cada ~10 braçadas). Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
-- Com **10/20** a barra pisca, as bordas da tela escurecem e o coração acelera. Com **7/20 ou menos** a nadadora fica lenta aos poucos.
+- O fôlego vai de **0 a 100%** e não volta sozinho. Cada braçada gasta **2%** (sempre igual, com ou sem combo).
+- **RESPIRAR** devolve **25%**. Respirar a mais não tem penalidade (só não dá para respirar duas vezes sem uma braçada no meio).
+- Com **20% ou menos** a barra fica vermelha e pisca, as bordas da tela escurecem, o coração acelera e a nadadora fica lenta aos poucos.
 - Se o fôlego **zerar**: "Oh não! Você se afogou!" e o jogo recomeça do zero (no treino, recomeça o treino).
 - **Deslize:** a cada 5 braçadas perfeitas seguidas, as 3 próximas deslizam mais longe.
 - **Ritmo (estilo Flappy Bird):** cada toque dá um impulso na hora e a água freia rápido entre os toques. A barra de ritmo (vermelho → verde) mostra a velocidade. Toques no ritmo certo = PERFEITO (+1 combo); devagar ou rápido demais = −1 combo. Cada braçada rende cerca de 1 m.
