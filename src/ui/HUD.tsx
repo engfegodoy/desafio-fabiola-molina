@@ -186,6 +186,7 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
       else if (o === 'early') push('RESPIROU CEDO DEMAIS! −RITMO', '#ffb21f', 22);
       else if (o === 'consecutive') push('DÊ UMA BRAÇADA ANTES DE RESPIRAR!', '#ff7b6b', 20);
     }
+    if (e.type === 'sharkBreath') push('O TUBARÃO PAROU PARA RESPIRAR! 🦈', '#3df5ff', 22);
     if (e.type === 'energy') {
       if (e.level === 'warn') push('ATENÇÃO: ENERGIA EM 50%', '#ffd23f', 20);
       else if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 26);
@@ -371,7 +372,9 @@ function SharkDanger({ engine }: { engine: RaceEngine }) {
   return (
     <div className="hud-card w-[min(78vw,320px)] px-3 py-1.5">
       <div className="font-display flex items-center justify-between text-[11px] uppercase sm:text-xs">
-        <span className={danger > 0.7 ? 'anim-danger text-coral-400' : 'text-white'}>⚠ Perigo do tubarão</span>
+        <span className={danger > 0.7 ? 'anim-danger text-coral-400' : 'text-white'}>
+          {engine.shark?.breathing ? '💨 Tubarão respirando!' : '⚠ Perigo do tubarão'}
+        </span>
         <span>{Math.round(danger * 100)}%</span>
       </div>
       <div className="mt-1 h-3.5 overflow-hidden rounded-full border-2 border-white/80 bg-navy-900">

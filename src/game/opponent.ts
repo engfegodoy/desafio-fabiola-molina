@@ -52,7 +52,7 @@ export class OpponentAI {
             if (s.energy <= this.cfg.breatheBelow && s.strokesSinceBreath >= 1) {
               // Respira na hora certa (~a cada 5 braçadas) e retoma o ritmo.
               s.breathe();
-              this.waitTimer = ENERGY.breathTime + this.cfg.breathDelay * (0.5 + this.rng());
+              this.waitTimer = ENERGY.breathTime + this.cfg.breathPause + this.cfg.breathDelay * (0.5 + this.rng());
             } else {
               this.target = this.pickTarget();
               s.press();
@@ -105,8 +105,18 @@ export class Shark {
     // Se ficar muito para trás, ele dá uma acelerada para continuar no encalço.
     if (gap > 15) target += (gap - 15) * 0.12;
     target *= ramp;
+    // Pausa para respirar: quase para — é a chance de abrir vantagem.
+    if (this.breathing) target *= c.breathSpeed;
     this.speed += (target - this.speed) * Math.min(1, dt * 2.5);
     this.distance += this.speed * dt;
+  }
+
+  /** O tubarão está parado respirando? (ciclo fixo: a cada breathEvery s, por breathTime s) */
+  get breathing() {
+    const t = this.time - this.cfg.startDelay;
+    if (t <= 0) return false;
+    const ph = t % this.cfg.breathEvery;
+    return ph > this.cfg.breathEvery - this.cfg.breathTime;
   }
 
   gapTo(playerDistance: number) {

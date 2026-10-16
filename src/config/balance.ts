@@ -52,8 +52,8 @@ export const ENERGY = {
   max: 100,
   /** Custo por braçada, conforme a zona em que foi solta. */
   costGreen: 10,
-  costYellow: 14,
-  costRed: 18,
+  costYellow: 12,
+  costRed: 15,
   /** Toque rápido (braçada curta). */
   costShort: 8,
   /** Quanto uma respiração válida devolve (limitado a max). */
@@ -84,8 +84,8 @@ export const ENERGY = {
 /** Penalidades das zonas da barra de força (além da eficiência menor). */
 export const ZONES = {
   /** Zona vermelha freia: multiplicador de resistência por um instante. */
-  redDrag: 1.7,
-  redDragTime: 0.45,
+  redDrag: 1.4,
+  redDragTime: 0.3,
   /** Zona amarela antes do verde tira 1 do combo (amarela depois do verde também). */
   yellowComboLoss: 1,
   /** Braçada "atropelada" abaixo deste fator de ritmo quebra o combo: PERDEU O RITMO! */
@@ -168,6 +168,8 @@ export interface OpponentConfig {
   breatheBelow: number;
   /** Atraso (s) para reagir e respirar. */
   breathDelay: number;
+  /** Pausa extra (s) que ela faz ao respirar — é a chance de passar por ela. */
+  breathPause: number;
 }
 
 export interface StageConfig {
@@ -198,6 +200,11 @@ export interface SharkConfig {
   startDelay: number;
   /** Distância (m) em que o tubarão alcança o jogador. */
   catchGap: number;
+  /** O tubarão também precisa respirar: a cada X s ele quase para por Y s. */
+  breathEvery: number;
+  breathTime: number;
+  /** Velocidade (fração) durante a respiração do tubarão. */
+  breathSpeed: number;
 }
 
 const NO_WAVES: WaveConfig = {
@@ -250,7 +257,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.09,
+      power: 1.045,
       perfectRate: 0.5,
       greatRate: 0.38,
       goodRate: 0.1,
@@ -258,6 +265,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       pauseMax: 0.16,
       breatheBelow: 52,
       breathDelay: 0.08,
+      breathPause: 0.45,
     },
   },
   seaDay: {
@@ -289,7 +297,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.09,
+      power: 1.06,
       perfectRate: 0.5,
       greatRate: 0.38,
       goodRate: 0.1,
@@ -297,6 +305,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       pauseMax: 0.16,
       breatheBelow: 52,
       breathDelay: 0.08,
+      breathPause: 0.45,
     },
   },
   seaNight: {
@@ -328,7 +337,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.08,
+      power: 1.065,
       perfectRate: 0.56,
       greatRate: 0.34,
       goodRate: 0.08,
@@ -336,6 +345,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       pauseMax: 0.14,
       breatheBelow: 52,
       breathDelay: 0.08,
+      breathPause: 0.45,
     },
   },
   shark: {
@@ -367,12 +377,15 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     shark: {
       startGap: 11,
-      baseSpeed: 2.9,
+      baseSpeed: 3.1,
       speedRamp: 0.006,
       surgeAmp: 0.32,
       surgePeriod: 6.5,
       startDelay: 1.6,
       catchGap: 1.1,
+      breathEvery: 6,
+      breathTime: 1.2,
+      breathSpeed: 0.3,
     },
   },
 };

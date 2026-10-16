@@ -230,6 +230,7 @@ function makeSharkDrive(engine: RaceEngine) {
   let y = -2.6;
   let yaw = 0;
   let pitch = 0;
+  let spout = 0;
   return (pose: SharkPose, t: number, dt: number) => {
     const sh = engine.shark!;
     const state = engine.state;
@@ -267,6 +268,17 @@ function makeSharkDrive(engine: RaceEngine) {
         pose.grumpy = 1;
         mouth = 0.15;
         pose.swim = 0.3;
+      }
+    }
+    if (state === 'racing' && sh.breathing) {
+      // respira na superfície: sobe um pouco, abre a boca e solta um jato de água
+      targetY += 0.25;
+      mouth = 0.75;
+      pose.swim = 0.25;
+      spout -= dt;
+      if (spout <= 0) {
+        spout = 0.12;
+        splashBus.burst(px, h + 0.9, z - 0.3, 0.5, 4);
       }
     }
     y += (targetY - y) * Math.min(1, dt * 6);

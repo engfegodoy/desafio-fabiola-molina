@@ -24,6 +24,7 @@ interface Bot {
 const BOTS: Bot[] = [
   { name: 'craque', sigma: 0.03, pause: 0.1, breatheAt: 52 },
   { name: 'bom', sigma: 0.05, pause: 0.13, breatheAt: 52 },
+  { name: 'erra-e-ajusta', sigma: 0.065, pause: 0.15, breatheAt: 50 },
   { name: 'médio', sigma: 0.08, pause: 0.18, breatheAt: 40 },
   { name: 'iniciante', sigma: 0.12, pause: 0.24, breatheAt: 30 },
   { name: 'sem-respirar', sigma: 0.03, pause: 0.1, breatheAt: -1 },

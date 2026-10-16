@@ -41,7 +41,8 @@ export type EngineEvent =
   | { type: 'wave'; kind: 'front' | 'back' }
   | { type: 'comboLost' }
   | { type: 'breath'; who: 'player'; result: BreathResult }
-  | { type: 'energy'; level: 'warn' | 'low' | 'critical' };
+  | { type: 'energy'; level: 'warn' | 'low' | 'critical' }
+  | { type: 'sharkBreath' };
 
 type Listener = (e: EngineEvent) => void;
 
@@ -366,7 +367,9 @@ export class RaceEngine {
 
     // Tubarão
     if (this.shark) {
+      const wasBreathing = this.shark.breathing;
       this.shark.update(dt, p.distance);
+      if (!wasBreathing && this.shark.breathing) this.emit({ type: 'sharkBreath' });
       if (this.shark.gapTo(p.distance) <= this.cfg.shark!.catchGap) {
         this.outcome = 'caught';
         p.finishTime = this.time;
