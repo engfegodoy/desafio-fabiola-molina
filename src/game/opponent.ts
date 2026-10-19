@@ -25,7 +25,7 @@ export class OpponentAI {
     const c = this.cfg;
     // variação suave em torno do ritmo dela (soma de uniformes ~ normal)
     const g = (this.rng() + this.rng() + this.rng() - 1.5) * 1.4;
-    return Math.max(0.2, c.tapInterval + g * c.tapJitter);
+    return Math.max(0.1, c.tapInterval + g * c.tapJitter);
   }
 
   update(dt: number, env: SwimEnv, _warning: WaveWarning | null, active: boolean): StrokeResult | null {

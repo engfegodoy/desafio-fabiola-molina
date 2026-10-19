@@ -229,12 +229,12 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.02,
-      tapInterval: 0.225,
+      power: 1.0,
+      tapInterval: 0.207,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
-      breathPause: 0.45,
+      breathPause: 0.25,
     },
   },
   seaDay: {
@@ -266,12 +266,12 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.03,
-      tapInterval: 0.223,
+      power: 1.0,
+      tapInterval: 0.203,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
-      breathPause: 0.45,
+      breathPause: 0.25,
     },
   },
   seaNight: {
@@ -303,12 +303,12 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 0.97,
-      tapInterval: 0.21,
+      power: 1.0,
+      tapInterval: 0.2,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
-      breathPause: 0.45,
+      breathPause: 0.25,
     },
   },
   shark: {
@@ -340,7 +340,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     shark: {
       startGap: 11,
-      baseSpeed: 3.22,
+      baseSpeed: 3.44,
       speedRamp: 0.006,
       surgeAmp: 0.32,
       surgePeriod: 6.5,

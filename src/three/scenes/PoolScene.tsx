@@ -333,7 +333,7 @@ export function PoolScene({ length, crowd, quality, lanes = 2 }: { length: numbe
       )}
 
       {/* placar / logo no fundo */}
-      <group position={[0, 0, crowd ? endZ - 9 : POOL.startWall - 60]}>
+      <group position={[0, 0, endZ - 9]}>
         <group scale={HW > 6 ? 1.6 : 1}>
         <mesh position={[0, 5.2, 0]}>
           <boxGeometry args={[11, 6, 0.4]} />
