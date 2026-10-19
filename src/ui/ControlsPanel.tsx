@@ -6,7 +6,7 @@ import { audio } from '../audio/audio';
 /** Configuração de teclas (computador) e esquema de toque (celular). Usado antes do treino e na pausa. */
 export function ControlsPanel({ showBoth = false }: { showBoth?: boolean }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 sm:gap-4">
       {(!isTouch || showBoth) && <KeyboardSettings />}
       {(isTouch || showBoth) && <MobileSettings />}
     </div>
@@ -105,13 +105,13 @@ const SCHEMES: { id: MobileScheme; title: string; icon: string; lines: string[] 
     id: 'buttons',
     title: 'Botões separados',
     icon: '🔘',
-    lines: ['Direita: TOQUE PARA NADAR (mais rápido = mais veloz)', 'Esquerda: toque RESPIRAR'],
+    lines: ['Direita: NADAR', 'Esquerda: RESPIRAR'],
   },
   {
     id: 'gesture',
     title: 'Toque e gesto',
     icon: '👆',
-    lines: ['Toque em qualquer lugar = braçada na hora', 'Arraste para cima = RESPIRAR'],
+    lines: ['Toque na tela: NADAR', 'Arraste para cima: RESPIRAR'],
   },
 ];
 
@@ -120,8 +120,8 @@ function MobileSettings() {
   const setScheme = useGame((s) => s.setMobileScheme);
   return (
     <div className="rounded-2xl border-2 border-sky-100 bg-white p-3 sm:p-4">
-      <div className="font-display mb-2 text-lg text-navy-800">📱 Toque na tela</div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="font-display mb-2 text-base text-navy-800 sm:text-lg">📱 Toque na tela</div>
+      <div className="grid grid-cols-2 gap-2">
         {SCHEMES.map((s) => {
           const active = scheme === s.id;
           return (
@@ -132,19 +132,19 @@ function MobileSettings() {
                 audio.click();
                 setScheme(s.id);
               }}
-              className={`relative rounded-2xl border-4 p-3 text-left transition ${
+              className={`relative rounded-2xl border-4 p-2 text-left transition sm:p-3 ${
                 active ? 'border-sun-400 bg-sun-300/30 shadow-lg' : 'border-sky-100 bg-sky-50'
               }`}
             >
               {active && (
-                <span className="font-display absolute right-2 top-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] text-white">ATIVO</span>
+                <span className="font-display absolute -top-2.5 right-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] text-white">ATIVO</span>
               )}
-              <div className="font-display text-navy-800">
+              <div className="font-display text-sm text-navy-800 sm:text-base">
                 {s.icon} {s.title}
               </div>
               <SchemeDemo id={s.id} />
               {s.lines.map((l) => (
-                <div key={l} className="text-xs font-bold text-sky-700">
+                <div key={l} className="text-[10px] font-bold leading-tight text-sky-700 sm:text-xs">
                   • {l}
                 </div>
               ))}
@@ -159,20 +159,20 @@ function MobileSettings() {
 /** Pequena demonstração animada de cada esquema. */
 function SchemeDemo({ id }: { id: MobileScheme }) {
   return (
-    <div className="relative my-2 h-24 overflow-hidden rounded-xl bg-gradient-to-b from-sky-300 to-sky-500">
+    <div className="relative my-1.5 h-16 overflow-hidden sm:my-2 sm:h-24 rounded-xl bg-gradient-to-b from-sky-300 to-sky-500">
       <div className="absolute inset-x-0 top-1/2 h-px bg-white/40" />
       {id === 'buttons' ? (
         <>
-          <div className="demo-tap-left absolute bottom-2 left-2 flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-emerald-400 text-lg">🫁</div>
-          <div className="demo-hold-right absolute bottom-2 right-2 flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-sun-400 text-lg">🏊</div>
-          <div className="absolute bottom-3 left-1/2 h-2 w-16 -translate-x-1/2 overflow-hidden rounded-full border border-white bg-gradient-to-r from-red-400 via-green-400 to-red-400">
+          <div className="demo-tap-left absolute bottom-1.5 left-1.5 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-emerald-400 text-base sm:bottom-2 sm:left-2 sm:h-11 sm:w-11 sm:text-lg">🫁</div>
+          <div className="demo-hold-right absolute bottom-1.5 right-1.5 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-sun-400 text-base sm:bottom-2 sm:right-2 sm:h-12 sm:w-12 sm:text-lg">🏊</div>
+          <div className="absolute bottom-3 left-1/2 h-2 w-10 -translate-x-1/2 sm:w-16 overflow-hidden rounded-full border border-white bg-gradient-to-r from-red-400 via-green-400 to-red-400">
             <div className="demo-needle absolute inset-y-0 w-1 bg-white" />
           </div>
         </>
       ) : (
         <>
-          <div className="demo-finger absolute left-1/2 top-12 text-2xl">👆</div>
-          <div className="demo-arrow absolute left-[58%] top-3 text-lg text-white">⬆</div>
+          <div className="demo-finger absolute left-1/2 top-7 text-2xl sm:top-12">👆</div>
+          <div className="demo-arrow absolute left-[58%] top-1 text-lg text-white sm:top-3">⬆</div>
         </>
       )}
     </div>

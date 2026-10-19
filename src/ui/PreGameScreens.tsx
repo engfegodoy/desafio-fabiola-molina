@@ -60,14 +60,14 @@ export function ControlsScreen() {
   const startTutorial = useGame((s) => s.startTutorial);
   return (
     <Shell step="PASSO 3 DE 3 • CONTROLES">
-      <div className="font-display text-stroke mb-3 text-center text-4xl text-sun-400 sm:text-5xl">SEUS CONTROLES</div>
+      <div className="font-display text-stroke mb-2 text-center text-3xl text-sun-400 sm:mb-3 sm:text-5xl">SEUS CONTROLES</div>
       <ControlsPanel />
-      <p className="mt-2 text-center text-xs font-bold text-sky-700">Você pode mudar isso depois no menu de pausa (⚙ Controles).</p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <Button color="white" className="sm:w-40" onClick={() => goTo('rules')}>
+      <p className="mt-2 text-center text-[10px] font-bold text-sky-700 sm:text-xs">Dá para mudar depois na pausa (⚙ Controles).</p>
+      <div className="mt-3 flex flex-row items-stretch gap-2 sm:mt-4">
+        <Button color="white" className="shrink-0 !px-3 sm:w-40" onClick={() => goTo('rules')}>
           ◀ Voltar
         </Button>
-        <Button big className="flex-1" onClick={startTutorial}>
+        <Button className="flex-1 !px-2 sm:!px-8 sm:!py-4 sm:!text-2xl" onClick={startTutorial}>
           INICIAR TREINAMENTO 🏊
         </Button>
       </div>
