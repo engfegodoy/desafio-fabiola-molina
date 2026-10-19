@@ -38,9 +38,11 @@ export interface SwimEnv {
   push: number;
   /** Multiplicador de eficiência da braçada. */
   strokeMul: number;
+  /** Onda puxando para trás (m/s). */
+  pull?: number;
 }
 
-export const CALM_ENV: SwimEnv = { dragMul: 1, push: 0, strokeMul: 1 };
+export const CALM_ENV: SwimEnv = { dragMul: 1, push: 0, strokeMul: 1, pull: 0 };
 
 /** Rendimento (0..1) para um nível de energia: 100% até o limite, caindo aos poucos abaixo. */
 export function energyFactor(energy: number): number {
@@ -89,6 +91,12 @@ export class Swimmer {
   lastPerfect = false;
   /** Teto de velocidade atual (sobe com o combo, cai com o cansaço e as ondas). */
   speedCap = SWIM.maxSpeed;
+  /** Intervalos recentes entre toques (para medir o ritmo). */
+  private recent: number[] = [];
+  /** Tempo restante em que a velocidade se mantém depois do toque. */
+  private holdLeft = 0;
+  /** Distância (m) em que o fôlego cai 25% (cada fase pede mais respirações). */
+  breathEveryMeters = 18;
   /** Braçadas perfeitas seguidas e bônus de deslize restante. */
   perfectStreak = 0;
   glideLeft = 0;
@@ -107,9 +115,15 @@ export class Swimmer {
     speedSum: 0,
   };
 
-  constructor(rhythm: RhythmConfig, power = 1) {
+  constructor(rhythm: RhythmConfig, power = 1, breathEveryMeters = 18) {
     this.rhythm = rhythm;
     this.power = power;
+    this.breathEveryMeters = breathEveryMeters;
+  }
+
+  /** Rendimento pelo ritmo: 5+ toques/s = 100%; cada toque/s a menos tira 10%. */
+  static rateFactor(rate: number): number {
+    return Math.max(SWIM.rateFloor, Math.min(1, 1 - SWIM.ratePenalty * (SWIM.fullRate - rate)));
   }
 
   get comboMultiplier(): number {
@@ -172,14 +186,22 @@ export class Swimmer {
       this.perfectStreak = 0;
     }
 
-    const qualityEff = QUALITY[quality];
-    const efficiency = qualityEff * this.comboMultiplier * env.strokeMul * this.power * this.vigor;
-    // Impulso instantâneo: com o freio da água, cada braçada rende ~strokeDistance metros.
-    const impulse = SWIM.waterDecay * SWIM.strokeDistance * efficiency;
-    // Quanto mais rápido tocar, mais rápido nada — até o teto (que sobe com o combo).
-    this.speedCap = SWIM.maxSpeed * this.comboMultiplier * env.strokeMul * this.power * this.vigor;
-    if (this.speed < this.speedCap) this.speed = Math.min(this.speedCap, this.speed + impulse);
+    // Ritmo medido pelos últimos toques: 5+/s = 100%, 4/s = 90%, 3/s = 80%...
+    if (this.strokesSinceBreath > 0 || this.recent.length === 0) {
+      this.recent.push(interval);
+      if (this.recent.length > SWIM.rateWindow) this.recent.shift();
+    }
+    const avg = this.recent.reduce((a, b) => a + b, 0) / this.recent.length;
+    const rateFactor = Swimmer.rateFactor(1 / Math.max(0.05, avg));
+    const efficiency = rateFactor * this.comboMultiplier * env.strokeMul * this.power * this.vigor;
+    // Impulso imediato: a velocidade vai na hora para a velocidade do seu ritmo.
+    this.speedCap = SWIM.maxSpeed * efficiency;
+    const impulse = Math.max(0, this.speedCap - this.speed);
+    // A cada toque a velocidade vai para a do momento (ritmo, combo, fôlego e ondas).
+    this.speed = this.speedCap;
+    this.holdLeft = SWIM.holdTime;
     this.lastPerfect = quality === 'perfect';
+    void QUALITY;
     // O fôlego cai pela distância nadada (no update), não por braçada.
     const cost = 0;
     this.tapRate += (1 / Math.max(0.12, interval) - this.tapRate) * 0.35;
@@ -242,8 +264,8 @@ export class Swimmer {
     this.vigor += (target - this.vigor) * Math.min(1, dt * ENERGY.fatigueRate);
     const tired = (1 - this.vigor) / (1 - ENERGY.emptyEfficiency);
 
-    // Freio da água: a velocidade cai rápido até o deslize mínimo (nunca para de vez).
-    // Braçada perfeita e o bônus de 5 perfeitas seguidas deslizam melhor.
+    // Freio da água: depois de um instante, a velocidade cai rápido até o deslize mínimo
+    // (nunca para de vez). Braçada perfeita e o bônus de 5 perfeitas seguidas deslizam melhor.
     const decay =
       SWIM.waterDecay *
       env.dragMul *
@@ -252,13 +274,17 @@ export class Swimmer {
       (this.lastPerfect ? SWIM.perfectGlide : 1);
     const floor = this.hasStroked && !this.finished ? SWIM.driftSpeed : 0;
     let v = this.speed;
-    if (v > floor) v = floor + (v - floor) * Math.exp(-decay * dt);
+    if (this.holdLeft > 0) this.holdLeft -= dt;
+    else if (v > floor) v = floor + (v - floor) * Math.exp(-decay * dt);
     v += env.push * dt;
-    this.speed = Math.max(0, Math.min(SWIM.maxSpeed, v));
-    this.distance += this.speed * dt;
-    // Fôlego cai com a distância nadada (ideal: respirar a cada ~30 m), igual para qualquer ritmo.
-    if (this.hasStroked && !this.finished) {
-      this.energy = Math.max(0, this.energy - this.speed * dt * (ENERGY.breathGain / ENERGY.breathEveryMeters));
+    this.speed = Math.max(0, Math.min(SWIM.maxSpeed * 1.5, v));
+    // A onda puxa para trás: com força suficiente, o nadador recua um pouco.
+    const pull = this.finished ? 0 : env.pull ?? 0;
+    const move = Math.max(-SWIM.maxBackSpeed, this.speed - pull);
+    this.distance = Math.max(0, this.distance + move * dt);
+    // Fôlego cai com a distância nadada (cada fase pede mais respirações), igual para qualquer ritmo.
+    if (this.hasStroked && !this.finished && move > 0) {
+      this.energy = Math.max(0, this.energy - move * dt * (ENERGY.breathGain / this.breathEveryMeters));
     }
     this.smoothSpeed += (this.speed - this.smoothSpeed) * Math.min(1, dt * 3);
 

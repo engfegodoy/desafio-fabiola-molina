@@ -3,7 +3,6 @@ import type { RaceEngine } from '../game/raceEngine';
 import { useEngineEvent } from '../game/engineContext';
 import { useGame } from '../store/gameStore';
 import { audio } from '../audio/audio';
-import { ENERGY } from '../config/balance';
 import { Button } from './common';
 
 const RESTART_IN = 4;
@@ -49,7 +48,7 @@ export function DrownOverlay({ engine }: { engine: RaceEngine }) {
         <div className="font-display text-stroke mt-1 text-4xl leading-tight text-coral-400 sm:text-5xl">OH NÃO!</div>
         <div className="font-display mt-1 text-2xl text-navy-800">Você se afogou!</div>
         <p className="mt-2 text-sm font-bold text-navy-700">
-          O fôlego acabou. Lembre de <span className="text-sky-600">respirar a cada ~{ENERGY.breathEveryMeters} m</span>!
+          O fôlego acabou. Lembre de <span className="text-sky-600">respirar a cada ~{engine.cfg.breathEveryMeters} m</span>!
         </p>
         <p className="mt-2 text-xs font-bold text-sky-700">
           {screen === 'tutorial' ? 'O treino' : 'O jogo'} recomeça do zero em {left}s…

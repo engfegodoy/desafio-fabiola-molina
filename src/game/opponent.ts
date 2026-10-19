@@ -56,8 +56,12 @@ export class Shark {
   speed = 0;
   time = 0;
 
-  constructor(cfg: SharkConfig) {
+  /** Forma do dia (multiplica a velocidade). */
+  form: number;
+
+  constructor(cfg: SharkConfig, form = 1) {
     this.cfg = cfg;
+    this.form = form;
     this.distance = -cfg.startGap;
   }
 
@@ -71,7 +75,7 @@ export class Shark {
     const t = this.time - c.startDelay;
     const ramp = Math.min(1, t / 2); // arrancada inicial
     let target =
-      c.baseSpeed + c.speedRamp * t + c.surgeAmp * Math.sin((t / c.surgePeriod) * Math.PI * 2 - 0.6);
+      c.baseSpeed * this.form + c.speedRamp * t + c.surgeAmp * Math.sin((t / c.surgePeriod) * Math.PI * 2 - 0.6);
     const gap = playerDistance - this.distance;
     // Se ficar muito para trás, ele dá uma acelerada para continuar no encalço.
     if (gap > 15) target += (gap - 15) * 0.12;

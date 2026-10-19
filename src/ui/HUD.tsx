@@ -319,7 +319,7 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
           >
             {w.inside > 0.35 || w.distance < 0.6
               ? w.kind === 'front'
-                ? '🌊 ONDA CONTRA! ÁGUA MAIS PESADA'
+                ? '🌊 ONDA! ELA TE PUXA PARA TRÁS'
                 : '🌊 ONDA A FAVOR! NADE AGORA!'
               : w.kind === 'front'
                 ? `⬇ ONDA DE FRENTE EM ${w.distance.toFixed(0)} m`

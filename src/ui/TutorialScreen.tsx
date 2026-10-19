@@ -50,7 +50,7 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
     { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+${ENERGY.breathGain}% de fôlego)` },
     { icon: '🔥', title: 'TOQUE RÁPIDO = PERFEITO', text: '5 toques por segundo: 5 PERFEITAS seguidas' },
     { icon: '🏊', title: 'CONTINUE NADANDO', text: 'mais 20 metros, de olho no fôlego' },
-    { icon: '🫁', title: 'RESPIRE DE NOVO', text: `a cada ~${ENERGY.breathEveryMeters} m: ${how.breathe}` },
+    { icon: '🫁', title: 'RESPIRE DE NOVO', text: `a cada ~${engine.cfg.breathEveryMeters} m: ${how.breathe}` },
   ];
 
   const step = Math.min(engine.tutorialStep, STEPS.length - 1);

@@ -97,6 +97,7 @@ export class WaveField {
     let dragMul = 1;
     let push = 0;
     let strokeMul = 1;
+    let pull = 0;
     if (c.dragVariation > 0) {
       const t = this.time;
       dragMul *= 1 + c.dragVariation * Math.sin(t * 0.45) * (0.6 + 0.4 * Math.sin(t * 0.17 + 1.3));
@@ -109,12 +110,13 @@ export class WaveField {
         dragMul += c.frontDrag * s;
         push -= c.frontPush * s;
         strokeMul *= 1 - c.frontStrokePenalty * s;
+        pull += c.frontPull * s;
       } else {
         push += c.backPush * s;
         strokeMul *= 1 + c.backStrokeBonus * s;
       }
     }
-    return { dragMul, push, strokeMul };
+    return { dragMul, push, strokeMul, pull };
   }
 
   /** Onda mais próxima que está chegando (para o aviso do HUD). */

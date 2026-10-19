@@ -31,11 +31,11 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
 
 ## Fôlego e respiração
 
-- O fôlego vai de **0 a 100%** e cai conforme a distância nadada (igual para qualquer ritmo ou combo). O ideal é **respirar a cada ~18 m** (2 vezes na piscina de 50 m e mais vezes nas provas longas): respirar devolve **25%**.
+- O fôlego vai de **0 a 100%** e cai conforme a distância nadada (igual para qualquer ritmo ou combo). A cada fase é preciso respirar mais vezes: a cada ~18 m na piscina, ~15 m no mar de dia, ~13 m à noite e ~12 m na fuga do tubarão. Respirar devolve **25%**.
 - Abaixo de **75%** a barra fica laranja e a nadadora perde velocidade aos poucos; com **20% ou menos** fica vermelha e pisca, as bordas da tela escurecem e o coração acelera.
 - Se o fôlego **zerar**: "Oh não! Você se afogou!" e o jogo recomeça do zero (no treino, recomeça o treino).
 - **Deslize:** a cada 5 braçadas perfeitas seguidas, as 3 próximas deslizam mais longe.
-- **Toques (estilo Flappy Bird):** cada toque dá um impulso na hora e a água freia rápido entre os toques. **Quanto mais rápido tocar, mais rápido nada** (até o limite de velocidade). 1–2 toques/s = Devagar! (−1 combo), 3–4/s = Bom!, 5 ou mais = PERFEITO! (+1 combo, desliza melhor e o combo aumenta o limite de velocidade). A barra de ritmo (vermelho → verde) mostra a velocidade.
+- **Toques (estilo Flappy Bird):** cada toque dá um impulso na hora e a água freia rápido entre os toques. **5 toques por segundo = velocidade máxima** (6 ou mais rende o mesmo); cada toque/s a menos tira 10% da velocidade (4/s = 90%, 3/s = 80%...). 1–2 toques/s = Devagar! (−1 combo), 3–4/s = Bom!, 5 ou mais = PERFEITO! (+1 combo, desliza melhor; o combo dá até +24%). A barra de ritmo (vermelho → verde) mostra a velocidade.
 - A Fabiola respira (com uma pequena pausa) e o tubarão para para respirar a cada 6 s.
 - Todos os números ficam em `SWIM`, `QUALITY`, `ENERGY`, `GLIDE` e no `rhythm` de cada fase em `src/config/balance.ts`.
 
@@ -53,6 +53,7 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
 ## Regras principais
 
 - A Fabiola usa **a mesma física do jogador**, e o resultado sai da simulação da corrida. Nada é predeterminado.
-- Ondas frontais aumentam a resistência e reduzem a eficiência; ondas traseiras empurram a favor. Isso vale para as duas nadadoras.
+- No mar, cada onda vem de frente e **puxa um pouco para trás** (quem para de tocar recua 1–2 m). Vale para as duas nadadoras.
+- A Fabiola e o tubarão têm uma pequena variação de forma a cada corrida, então a dificuldade sobe de fase em fase sem resultado predeterminado.
 - Repetir uma fase substitui o resultado anterior dela. É possível avançar mesmo perdendo.
 - Cupons: FABIOLA20 (3 vitórias + escapou), FRETEGRATIS (3 vitórias sem escapar), FABIOLA15 (2 vitórias), FABIOLA10 (1 vitória), FABIOLA5 (nenhuma vitória). Os códigos são demonstrativos.

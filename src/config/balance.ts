@@ -18,18 +18,28 @@ export type StageKind = 'tutorial' | 'pool' | 'seaDay' | 'seaNight' | 'shark';
  * é preciso tocar num ritmo constante (~2 a 3 toques por segundo).
  */
 export const SWIM = {
-  /** Distância (m) que cada braçada rende antes do limite de velocidade. */
-  strokeDistance: 1.0,
-  /** Freio da água (1/s): sem tocar, a nadadora perde a velocidade em ~1 s. */
+  /** Velocidade de cruzeiro (m/s) tocando 5 vezes por segundo, sem combo. */
+  maxSpeed: 2.4,
+  /** A partir deste ritmo (toques/s) a velocidade é 100%: tocar mais rápido não ajuda mais. */
+  fullRate: 4.6,
+  /** Cada toque/s abaixo de fullRate tira esta fração da velocidade (4/s = −10%, 3/s = −20%...). */
+  ratePenalty: 0.1,
+  /** Rendimento mínimo por ritmo (tocando muito devagar). */
+  rateFloor: 0.4,
+  /** Quantos intervalos recentes entram na média do ritmo. */
+  rateWindow: 3,
+  /** Depois de um toque, a velocidade se mantém por este tempo (s) antes da água frear. */
+  holdTime: 0.26,
+  /** Freio da água (1/s) depois do holdTime: sem tocar, perde a velocidade em ~1 s. */
   waterDecay: 3.0,
   /** Braçada PERFEITA desliza melhor: o freio da água fica menor até o próximo toque. */
   perfectGlide: 0.75,
   /** Velocidade mínima de deslize: nunca fica totalmente parada. */
   driftSpeed: 0.3,
-  /** Velocidade máxima sem combo (trava): mantém a duração das provas. O combo aumenta este teto. */
-  maxSpeed: 3.0,
+  /** Velocidade máxima para trás (quando a onda puxa). */
+  maxBackSpeed: 1.2,
 
-  /** Combo: cada braçada PERFEITA soma este bônus no teto de velocidade (x5 = +24%). */
+  /** Combo: cada braçada PERFEITA soma este bônus de velocidade (x5 = +24%). */
   comboStep: 0.06,
   comboMax: 5,
   /** Ficar este tempo (s) sem uma braçada perfeita zera o combo. */
@@ -58,14 +68,13 @@ export const QUALITY = {
  * Fôlego de 0 a 100%.
  * A energia NÃO se recupera sozinha: só a ação RESPIRAR devolve fôlego.
  * O fôlego cai conforme a distância nadada (não importa o ritmo ou o combo):
- * o ideal é respirar a cada ~18 m (2 vezes na piscina de 50 m), quando ele chega em 75% — respirar devolve 25%.
+ * a cada fase é preciso respirar mais vezes (ver `breathEveryMeters` de cada fase) — respirar devolve 25%.
  * Abaixo de 75% a barra fica laranja e a nadadora vai perdendo velocidade aos poucos;
  * com 20% ou menos fica vermelha e pisca; em 0% se afoga.
  */
 export const ENERGY = {
   max: 100,
-  /** Ideal: respirar a cada X metros. */
-  breathEveryMeters: 18,
+
   /** Quanto uma respiração devolve (limitado a max). Respirar a mais não tem penalidade. */
   breathGain: 25,
   /** Duração da respiração (s): a cabeça vira e os toques nesse instante não contam. */
@@ -125,6 +134,8 @@ export interface WaveConfig {
   frontPush: number;
   /** Perda de eficiência da braçada dentro da onda frontal (0..1). */
   frontStrokePenalty: number;
+  /** Quanto a onda PUXA PARA TRÁS (m/s) no pico — o nadador recua um pouco. */
+  frontPull: number;
   /** Empurrão a favor (m/s²) dentro da onda traseira. */
   backPush: number;
   /** Bônus de eficiência da braçada dentro da onda traseira. */
@@ -148,6 +159,8 @@ export interface OpponentConfig {
   breathDelay: number;
   /** Pausa extra (s) que ela faz ao respirar — é a chance de passar por ela. */
   breathPause: number;
+  /** Variação de "forma" a cada corrida (desvio, ex.: 0.04 = ±4%): uns dias ela está mais rápida. */
+  formVariation: number;
 }
 
 export interface StageConfig {
@@ -156,6 +169,8 @@ export interface StageConfig {
   title: string;
   subtitle: string;
   distance: number;
+  /** Ideal: respirar a cada X metros (o fôlego cai 25% nessa distância). */
+  breathEveryMeters: number;
   rhythm: RhythmConfig;
   waves: WaveConfig;
   /** Multiplicador de potência do jogador (dificuldade de ambiente). */
@@ -183,13 +198,15 @@ export interface SharkConfig {
   breathTime: number;
   /** Velocidade (fração) durante a respiração do tubarão. */
   breathSpeed: number;
+  /** Variação de forma a cada corrida (desvio da velocidade base). */
+  formVariation: number;
 }
 
 const NO_WAVES: WaveConfig = {
   enabled: false,
   intervalMin: 99,
   intervalMax: 99,
-  frontChance: 0,
+  frontChance: 1,
   strengthMin: 0,
   strengthMax: 0,
   width: 3,
@@ -199,6 +216,7 @@ const NO_WAVES: WaveConfig = {
   frontDrag: 0,
   frontPush: 0,
   frontStrokePenalty: 0,
+  frontPull: 0,
   backPush: 0,
   backStrokeBonus: 0,
   dragVariation: 0,
@@ -214,6 +232,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'TREINO',
     subtitle: 'Piscina de treinamento',
     distance: 9999,
+    breathEveryMeters: 18,
     rhythm: { slowAbove: 0.42, perfectBelow: 0.25 },
     waves: NO_WAVES,
     playerPower: 1,
@@ -224,17 +243,19 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'FASE 1 • PISCINA OLÍMPICA',
     subtitle: '50 metros contra Fabiola Molina',
     distance: 50,
+    breathEveryMeters: 18,
     rhythm: POOL_RHYTHM,
     waves: NO_WAVES,
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.0,
+      power: 0.98,
       tapInterval: 0.207,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
       breathPause: 0.25,
+      formVariation: 0.04,
     },
   },
   seaDay: {
@@ -243,12 +264,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'FASE 2 • CIRCUITO MARES: DIA',
     subtitle: '60 metros no mar aberto',
     distance: 60,
+    breathEveryMeters: 15,
     rhythm: { slowAbove: 0.4, perfectBelow: 0.235 },
     waves: {
       enabled: true,
       intervalMin: 3.2,
       intervalMax: 5.5,
-      frontChance: 0.55,
+      frontChance: 1,
       strengthMin: 0.55,
       strengthMax: 0.85,
       width: 2.6,
@@ -258,6 +280,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       frontDrag: 1.1,
       frontPush: 0.5,
       frontStrokePenalty: 0.42,
+      frontPull: 1.0,
       backPush: 0.75,
       backStrokeBonus: 0.15,
       dragVariation: 0.06,
@@ -272,6 +295,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       breatheBelow: 75,
       breathDelay: 0.08,
       breathPause: 0.25,
+      formVariation: 0.04,
     },
   },
   seaNight: {
@@ -280,12 +304,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'FASE 3 • CIRCUITO MARES: NOITE',
     subtitle: '65 metros sob a luz da lua',
     distance: 65,
+    breathEveryMeters: 13,
     rhythm: { slowAbove: 0.4, perfectBelow: 0.23 },
     waves: {
       enabled: true,
       intervalMin: 2.6,
       intervalMax: 4.4,
-      frontChance: 0.58,
+      frontChance: 1,
       strengthMin: 0.7,
       strengthMax: 1.0,
       width: 2.9,
@@ -295,6 +320,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       frontDrag: 1.35,
       frontPush: 0.65,
       frontStrokePenalty: 0.5,
+      frontPull: 1.3,
       backPush: 0.85,
       backStrokeBonus: 0.18,
       dragVariation: 0.14,
@@ -303,12 +329,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 1.0,
+      power: 1.015,
       tapInterval: 0.2,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
       breathPause: 0.25,
+      formVariation: 0.04,
     },
   },
   shark: {
@@ -317,12 +344,13 @@ export const STAGES: Record<StageKind, StageConfig> = {
     title: 'FASE 4 • FUGA DO TUBARÃO',
     subtitle: 'Nade até a areia!',
     distance: 75,
+    breathEveryMeters: 12,
     rhythm: { slowAbove: 0.4, perfectBelow: 0.235 },
     waves: {
       enabled: true,
       intervalMin: 4,
       intervalMax: 6.5,
-      frontChance: 0.4,
+      frontChance: 1,
       strengthMin: 0.45,
       strengthMax: 0.7,
       width: 2.6,
@@ -332,6 +360,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       frontDrag: 0.9,
       frontPush: 0.4,
       frontStrokePenalty: 0.35,
+      frontPull: 1.1,
       backPush: 0.8,
       backStrokeBonus: 0.15,
       dragVariation: 0.05,
@@ -340,7 +369,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     shark: {
       startGap: 11,
-      baseSpeed: 3.44,
+      baseSpeed: 3.68,
       speedRamp: 0.006,
       surgeAmp: 0.32,
       surgePeriod: 6.5,
@@ -349,6 +378,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       breathEvery: 6,
       breathTime: 1.2,
       breathSpeed: 0.3,
+      formVariation: 0.04,
     },
   },
 };

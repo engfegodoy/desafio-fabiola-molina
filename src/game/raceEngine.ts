@@ -47,6 +47,11 @@ export type EngineEvent =
 
 type Listener = (e: EngineEvent) => void;
 
+/** Normal aproximada (soma de uniformes) a partir do gerador com semente. */
+function gaussian(rng: () => number) {
+  return (rng() + rng() + rng() + rng() - 2) * 1.732;
+}
+
 /** Treino: nadar 20 m, respirar, 5 perfeitas seguidas, nadar mais 20 m e respirar de novo. */
 export const TUTORIAL_STEPS = [
   { key: 'meters', need: 20 },
@@ -111,16 +116,18 @@ export class RaceEngine {
     this.rng = mulberry32(seed);
     void opts;
     this.rhythm = this.cfg.rhythm;
-    this.player = new Swimmer(this.rhythm, this.cfg.playerPower);
+    this.player = new Swimmer(this.rhythm, this.cfg.playerPower, this.cfg.breathEveryMeters);
     this.waves = new WaveField(this.cfg.waves, seed ^ 0x9e3779b9);
     const lanes = kind === 'pool' ? LANES.pool : kind === 'seaDay' || kind === 'seaNight' ? LANES.sea : LANES.solo;
     this.playerX = lanes.player;
     this.opponentX = lanes.opponent;
     if (this.cfg.opponent) {
-      const s = new Swimmer(this.rhythm, this.cfg.opponent.power);
+      // A forma da Fabiola varia um pouco a cada corrida (nada é predeterminado).
+      const form = 1 + gaussian(this.rng) * this.cfg.opponent.formVariation;
+      const s = new Swimmer(this.rhythm, this.cfg.opponent.power * form, this.cfg.breathEveryMeters);
       this.opponent = new OpponentAI(s, this.cfg.opponent, mulberry32(seed + 77));
     }
-    if (this.cfg.shark) this.shark = new Shark(this.cfg.shark);
+    if (this.cfg.shark) this.shark = new Shark(this.cfg.shark, 1 + gaussian(this.rng) * this.cfg.shark.formVariation);
     if (kind === 'tutorial') this.setState('racing');
     // Ondas já existentes para o mar parecer vivo desde o início.
     if (this.cfg.waves.enabled) {

@@ -19,14 +19,13 @@ interface Bot {
 }
 
 const BOTS: Bot[] = [
-  { name: 'craque (6/s)', interval: 0.165, jitter: 0.015, breatheAt: 75 },
-  { name: 'bom (5/s)', interval: 0.2, jitter: 0.025, breatheAt: 75 },
-  { name: 'erra-e-ajusta', interval: 0.22, jitter: 0.04, breatheAt: 72 },
-  { name: 'médio (3,5/s)', interval: 0.29, jitter: 0.06, breatheAt: 55 },
-  { name: 'iniciante (2/s)', interval: 0.5, jitter: 0.12, breatheAt: 35 },
-  { name: 'amassador (10/s)', interval: 0.1, jitter: 0.01, breatheAt: 75 },
-  { name: 'sem-respirar', interval: 0.2, jitter: 0.025, breatheAt: -1 },
-  { name: 'respira-demais', interval: 0.2, jitter: 0.025, breatheAt: -1, breathEvery: 3 },
+  { name: '6 toques/s', interval: 0.167, jitter: 0.015, breatheAt: 75 },
+  { name: '5 toques/s', interval: 0.2, jitter: 0.02, breatheAt: 75 },
+  { name: '4,5 toques/s', interval: 0.222, jitter: 0.03, breatheAt: 72 },
+  { name: '4 toques/s', interval: 0.25, jitter: 0.03, breatheAt: 70 },
+  { name: '3 toques/s', interval: 0.333, jitter: 0.05, breatheAt: 60 },
+  { name: '10 toques/s', interval: 0.1, jitter: 0.01, breatheAt: 75 },
+  { name: 'sem-respirar', interval: 0.2, jitter: 0.02, breatheAt: -1 },
 ]
 
 function gauss() {

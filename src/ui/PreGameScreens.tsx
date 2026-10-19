@@ -29,8 +29,8 @@ export function RulesScreen() {
   const breathHow = isTouch ? (scheme === 'buttons' ? 'botão RESPIRAR' : 'arraste para cima') : bindingLabel(bindings.breathe);
 
   const tips = [
-    { icon: '🏊', title: 'Toque para nadar', text: `Cada toque (${swimHow}) = 1 braçada. Quanto mais rápido, mais rápido você nada!` },
-    { icon: '🫁', title: `Respire a cada ~${ENERGY.breathEveryMeters} m`, text: `O fôlego cai enquanto você nada. RESPIRAR (${breathHow}) devolve ${ENERGY.breathGain}%.` },
+    { icon: '🏊', title: 'Toque para nadar', text: `Cada toque (${swimHow}) = 1 braçada. 5 toques por segundo = velocidade máxima; menos que isso, mais devagar.` },
+    { icon: '🫁', title: 'Respire sempre', text: `O fôlego cai enquanto você nada (no mar, mais rápido). RESPIRAR (${breathHow}) devolve ${ENERGY.breathGain}%.` },
     { icon: '🐢', title: 'Fôlego baixo', text: `Abaixo de ${ENERGY.warnBelow}% você vai ficando lento; em ${ENERGY.lowAt}% fica vermelho. Zerou? Afogou!` },
     { icon: '🌊', title: 'PERFEITO!', text: '5 toques por segundo ou mais: desliza melhor, sobe o combo e nada mais rápido.' },
   ];
