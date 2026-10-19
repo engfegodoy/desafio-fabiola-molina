@@ -1,6 +1,4 @@
-import { ENERGY } from '../config/balance';
-import { bindingLabel } from '../game/keybindings';
-import { isTouch, useGame } from '../store/gameStore';
+import { useGame } from '../store/gameStore';
 import { AudioButton, Button } from './common';
 import { ControlsPanel } from './ControlsPanel';
 
@@ -23,16 +21,11 @@ function Shell({ children, step }: { children: React.ReactNode; step: string }) 
 /** TELA 2 — Regras e dicas. */
 export function RulesScreen() {
   const goTo = useGame((s) => s.goTo);
-  const bindings = useGame((s) => s.bindings);
-  const scheme = useGame((s) => s.mobileScheme);
-  const swimHow = isTouch ? (scheme === 'buttons' ? 'botão NADAR' : 'toque na tela') : bindingLabel(bindings.swim);
-  const breathHow = isTouch ? (scheme === 'buttons' ? 'botão RESPIRAR' : 'arraste para cima') : bindingLabel(bindings.breathe);
-
   const tips = [
-    { icon: '🏊', title: 'Toque para nadar', text: `Cada toque (${swimHow}) = 1 braçada. 5 toques por segundo = velocidade máxima; menos que isso, mais devagar.` },
-    { icon: '🫁', title: 'Respire sempre', text: `O fôlego cai enquanto você nada (no mar, mais rápido). RESPIRAR (${breathHow}) devolve ${ENERGY.breathGain}%.` },
-    { icon: '🐢', title: 'Fôlego baixo', text: `Abaixo de ${ENERGY.warnBelow}% você vai ficando lento; em ${ENERGY.lowAt}% fica vermelho. Zerou? Afogou!` },
-    { icon: '🌊', title: 'PERFEITO!', text: '5 toques por segundo ou mais: desliza melhor, sobe o combo e nada mais rápido.' },
+    { icon: '🏊', title: 'Toque para nadar' },
+    { icon: '🫁', title: 'Respire sempre' },
+    { icon: '🐢', title: 'Abaixo de 75% de fôlego você vai ficando lento' },
+    { icon: '⚠️', title: 'Zerou o fôlego, você se afoga' },
   ];
 
   return (
@@ -42,15 +35,12 @@ export function RulesScreen() {
         {tips.map((t, i) => (
           <div key={t.title} className="anim-slide flex items-center gap-3 rounded-2xl bg-sky-50 p-3" style={{ animationDelay: `${i * 0.06}s` }}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-sun-300 to-sun-500 text-2xl shadow">{t.icon}</div>
-            <div>
-              <div className="font-display text-navy-800">{t.title}</div>
-              <p className="text-sm font-bold leading-snug text-navy-700">{t.text}</p>
-            </div>
+            <div className="font-display text-navy-800">{t.title}</div>
           </div>
         ))}
       </div>
       <div className="font-display text-stroke-thin anim-wiggle mt-3 rounded-2xl bg-gradient-to-r from-[#0b2a6b] to-[#1f6fe5] px-4 py-2 text-center text-base text-sun-400 sm:text-lg">
-        SEGREDO DOS CAMPEÕES: TOQUE RÁPIDO, FÔLEGO NO CONTROLE E RESPIRAR NA HORA CERTA!
+        SEGREDO DOS CAMPEÕES: 5 TOQUES POR SEGUNDO DESLIZA MELHOR!
       </div>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Button color="white" className="sm:w-40" onClick={() => goTo('menu')}>
