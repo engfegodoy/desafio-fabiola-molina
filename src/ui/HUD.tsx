@@ -41,11 +41,15 @@ export function PowerBar({ engine }: { engine: RaceEngine }) {
     <div className="hud-card w-full px-3 pb-2.5 pt-1.5">
       <div className="font-display flex items-center justify-between text-[11px] uppercase tracking-wide text-white/90 sm:text-xs">
         <span>Ritmo • velocidade</span>
-        <span className="normal-case text-[#3df58a]">{p.tapRate > 0.3 ? `${p.tapRate.toFixed(1)} toques/s` : 'toque rápido!'}</span>
+        {p.glideLeft > 0 ? (
+          <span className="anim-pop normal-case text-aqua-300">🌊 deslizando x{p.glideLeft}</span>
+        ) : (
+          <span className="normal-case text-[#3df58a]">{p.tapRate > 0.3 ? `${p.tapRate.toFixed(1)} toques/s` : 'toque rápido!'}</span>
+        )}
       </div>
       <div ref={wrap} className="relative mt-1.5" style={{ borderRadius: 999 }}>
         <div
-          className="power-track h-6 sm:h-7"
+          className={`power-track h-6 sm:h-7 ${p.glideLeft > 0 ? 'ring-2 ring-aqua-300 shadow-[0_0_14px_rgba(103,232,249,0.9)]' : ''}`}
           style={{ background: 'linear-gradient(90deg,#ff3b3b 0%,#ff7a2f 28%,#ffd23f 52%,#9be84a 70%,#29d65f 84%,#3df58a 100%)' }}
         >
           {/* parte ainda não alcançada fica escurecida */}
@@ -154,9 +158,9 @@ interface Msg {
 }
 
 const QUALITY_MSG: Record<string, { text: string; color: string; size: number }> = {
-  perfect: { text: 'PERFEITO!', color: '#3df58a', size: 32 },
-  good: { text: 'Bom!', color: '#ffd23f', size: 24 },
-  slow: { text: 'Devagar!', color: '#ff9a3d', size: 24 },
+  perfect: { text: 'PERFEITO!', color: '#3df58a', size: 18 },
+  good: { text: 'Bom!', color: '#ffd23f', size: 15 },
+  slow: { text: 'Devagar!', color: '#ff9a3d', size: 15 },
 };
 
 export function Feedback({ engine }: { engine: RaceEngine }) {
@@ -164,29 +168,28 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
   const idRef = useRef(0);
   const push = (text: string, color: string, size: number) => {
     const id = ++idRef.current;
-    setMsgs((m) => [...m.slice(-2), { id, text, color, size }]);
+    setMsgs((m) => [...m.slice(-1), { id, text, color, size }]);
     setTimeout(() => setMsgs((m) => m.filter((x) => x.id !== id)), 850);
   };
   useEngineEvent(engine, (e) => {
     if (e.type === 'stroke' && e.who === 'player') {
       const q = QUALITY_MSG[e.result.quality];
       push(q.text, q.color, q.size);
-      if (e.result.glideEarned) push('🌊 SUPER DESLIZE! 3 BRAÇADAS', '#7ff0ff', 26);
       if (e.result.comboUp) {
         const n = e.result.combo;
-        push(n >= SWIM.comboMax ? `COMBO x${n}! MÁXIMO!` : `COMBO x${n}!`, '#ffd23f', 28 + n * 2);
+        push(n >= SWIM.comboMax ? `COMBO x${n} MÁX!` : `COMBO x${n}`, '#ffd23f', 17);
       }
     }
     if (e.type === 'breath') {
       const o = e.result.outcome;
-      if (o === 'ok' && e.result.gain > 0) push(`+${Math.round(e.result.gain)}% FÔLEGO!`, '#3df5ff', 28);
-      else if (o === 'consecutive') push('DÊ UMA BRAÇADA ANTES DE RESPIRAR!', '#ff7b6b', 20);
+      if (o === 'ok' && e.result.gain > 0) push(`+${Math.round(e.result.gain)}% FÔLEGO`, '#3df5ff', 17);
+      else if (o === 'consecutive') push('DÊ UMA BRAÇADA ANTES DE RESPIRAR', '#ff7b6b', 14);
     }
-    if (e.type === 'sharkBreath') push('O TUBARÃO PAROU PARA RESPIRAR! 🦈', '#3df5ff', 22);
+    if (e.type === 'sharkBreath') push('TUBARÃO RESPIRANDO! 🦈', '#3df5ff', 16);
     if (e.type === 'energy') {
-      if (e.level === 'warn') push('HORA DE RESPIRAR!', '#ffb21f', 22);
-      else if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 26);
-      else push('SEM FÔLEGO!', '#ff3b3b', 30);
+      if (e.level === 'warn') push('HORA DE RESPIRAR', '#ffb21f', 15);
+      else if (e.level === 'low') push('PRECISA RESPIRAR!', '#ff9a3d', 17);
+      else push('SEM FÔLEGO!', '#ff3b3b', 19);
     }
   });
   return (
@@ -194,8 +197,8 @@ export function Feedback({ engine }: { engine: RaceEngine }) {
       {msgs.map((m) => (
         <div
           key={m.id}
-          className="font-display text-stroke anim-side whitespace-nowrap"
-          style={{ color: m.color, fontSize: `clamp(16px, ${m.size * 0.11}vw + 8px, ${m.size}px)`, filter: 'drop-shadow(0 3px 0 rgba(0,0,0,0.25))' }}
+          className="font-display text-stroke-thin anim-side whitespace-nowrap"
+          style={{ color: m.color, fontSize: m.size, filter: 'drop-shadow(0 2px 0 rgba(0,0,0,0.25))' }}
         >
           {m.text}
         </div>
@@ -294,6 +297,11 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
               {Math.max(0, D - p.distance).toFixed(0)} m para a chegada
             </div>
           )}
+          {isTouch && scheme === 'gesture' && (
+            <div className="font-display whitespace-nowrap rounded-full bg-navy-800/60 px-2 py-0.5 text-[10px] text-white/90">
+              👆 nadar • ⬆ respirar
+            </div>
+          )}
         </div>
 
         <div className="pointer-events-auto flex flex-col items-end gap-2 justify-self-end">
@@ -358,12 +366,6 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
                 <EnergyBar engine={engine} highlight={energyHighlight} />
               </div>
               <ComboBox engine={engine} />
-              {engine.player.glideLeft > 0 && (
-                <div className="hud-card font-display anim-pop flex flex-col items-center justify-center px-2 text-center text-[10px] leading-tight text-aqua-300">
-                  🌊
-                  <span>DESLIZE x{engine.player.glideLeft}</span>
-                </div>
-              )}
             </div>
             <PowerBar engine={engine} />
           </div>

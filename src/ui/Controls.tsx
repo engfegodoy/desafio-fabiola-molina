@@ -76,7 +76,6 @@ const SWIPE_MIN = 60;
  */
 export function TouchControl({ engine }: { engine: RaceEngine }) {
   const scheme = useGame((s) => s.mobileScheme);
-  const [tap, setTap] = useState(0);
   const pointers = useRef(new Map<number, { x: number; y: number; breathed: boolean }>());
 
   if (isTouch && scheme === 'buttons') return null;
@@ -87,7 +86,6 @@ export function TouchControl({ engine }: { engine: RaceEngine }) {
     if (useGame.getState().paused) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY, breathed: false });
     actions.swim(engine);
-    setTap((t) => t + 1);
   };
   const move = (e: React.PointerEvent) => {
     const p = pointers.current.get(e.pointerId);
@@ -115,16 +113,6 @@ export function TouchControl({ engine }: { engine: RaceEngine }) {
       onPointerLeave={up}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {gesture && (
-        <div className="pointer-events-none absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 text-center">
-          <div
-            key={tap}
-            className="font-display anim-pop whitespace-nowrap rounded-2xl border-2 border-white/70 bg-navy-800/50 px-3 py-1.5 text-xs text-white shadow-lg"
-          >
-            👆 TOQUE = NADAR • ⬆ ARRASTE = RESPIRAR
-          </div>
-        </div>
-      )}
     </div>
   );
 }
