@@ -37,7 +37,7 @@ export const SWIM = {
   /** Velocidade mínima de deslize: nunca fica totalmente parada. */
   driftSpeed: 0.3,
   /** Velocidade máxima para trás (quando a onda puxa). */
-  maxBackSpeed: 1.2,
+  maxBackSpeed: 0.6,
 
   /** Combo: cada braçada PERFEITA soma este bônus de velocidade (x5 = +24%). */
   comboStep: 0.06,
@@ -280,7 +280,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       frontDrag: 1.1,
       frontPush: 0.5,
       frontStrokePenalty: 0.42,
-      frontPull: 1.0,
+      frontPull: 0.5,
       backPush: 0.75,
       backStrokeBonus: 0.15,
       dragVariation: 0.06,
@@ -320,7 +320,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       frontDrag: 1.35,
       frontPush: 0.65,
       frontStrokePenalty: 0.5,
-      frontPull: 1.3,
+      frontPull: 0.65,
       backPush: 0.85,
       backStrokeBonus: 0.18,
       dragVariation: 0.14,
@@ -360,7 +360,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
       frontDrag: 0.9,
       frontPush: 0.4,
       frontStrokePenalty: 0.35,
-      frontPull: 1.1,
+      frontPull: 0.55,
       backPush: 0.8,
       backStrokeBonus: 0.15,
       dragVariation: 0.05,
@@ -369,7 +369,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     shark: {
       startGap: 11,
-      baseSpeed: 3.68,
+      baseSpeed: 3.85,
       speedRamp: 0.006,
       surgeAmp: 0.32,
       surgePeriod: 6.5,

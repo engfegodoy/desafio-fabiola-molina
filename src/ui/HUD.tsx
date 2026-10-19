@@ -319,20 +319,8 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
 
       <div className="absolute inset-x-0 pointer-events-none top-[calc(max(10px,env(safe-area-inset-top))+108px)] flex justify-center px-2 sm:top-[calc(max(10px,env(safe-area-inset-top))+96px)] flex-col items-center gap-1.5">
         {isShark && showRace && <SharkDanger engine={engine} />}
-          {w && w.distance < 9 && (engine.state === 'racing' || engine.state === 'finishing') && !p.finished && (
-          <div
-            className={`font-display anim-pop rounded-xl border-2 border-white px-3 py-1 text-xs sm:text-sm ${
-              w.kind === 'front' ? 'bg-coral-500/90' : 'bg-emerald-500/90'
-            }`}
-          >
-            {w.inside > 0.35 || w.distance < 0.6
-              ? w.kind === 'front'
-                ? '🌊 ONDA! ELA TE PUXA PARA TRÁS'
-                : '🌊 ONDA A FAVOR! NADE AGORA!'
-              : w.kind === 'front'
-                ? `⬇ ONDA DE FRENTE EM ${w.distance.toFixed(0)} m`
-                : `⬆ ONDA A FAVOR CHEGANDO`}
-          </div>
+          {w && w.distance < 12 && (engine.state === 'racing' || engine.state === 'finishing') && !p.finished && (
+          <WaveAlert kind={w.kind} distance={w.distance} hitting={w.inside > 0.35 || w.distance < 0.6} />
         )}
       </div>
       {!tutorial && <ProgressRail engine={engine} />}
@@ -370,6 +358,36 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
             <PowerBar engine={engine} />
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Aviso grande de onda: amarelo chegando, vermelho puxando para trás. */
+function WaveAlert({ kind, distance, hitting }: { kind: 'front' | 'back'; distance: number; hitting: boolean }) {
+  const front = kind === 'front';
+  const title = front
+    ? hitting
+      ? 'A ONDA ESTÁ TE PUXANDO!'
+      : `ONDA CHEGANDO! ${Math.max(1, Math.ceil(distance))} m`
+    : hitting
+      ? 'ONDA A FAVOR! NADE AGORA!'
+      : 'ONDA A FAVOR CHEGANDO';
+  const tip = front
+    ? hitting
+      ? '⬅ ela te leva para trás • toque rápido!'
+      : 'ela vai te puxar para trás • prepare-se!'
+    : 'ela te empurra para frente';
+  const bg = front ? (hitting ? 'bg-coral-500' : 'bg-sun-400 text-navy-800') : 'bg-emerald-500';
+  return (
+    <div
+      key={`${kind}-${hitting}`}
+      className={`font-display anim-pop flex items-center gap-2 rounded-2xl border-[3px] border-white px-3 py-1.5 shadow-2xl sm:px-4 ${bg}`}
+    >
+      <span className={`text-3xl leading-none sm:text-4xl ${front && hitting ? 'anim-wave-shake' : 'anim-wave-bob'}`}>🌊</span>
+      <div className="flex flex-col leading-tight">
+        <span className={`text-sm sm:text-lg ${front && hitting ? 'anim-wave-alert' : ''}`}>{title}</span>
+        <span className="text-[10px] opacity-90 sm:text-xs">{tip}</span>
       </div>
     </div>
   );

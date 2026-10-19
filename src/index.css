@@ -330,3 +330,11 @@ input {
     animation: none !important;
   }
 }
+
+/* aviso de onda */
+@keyframes wave-alert { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes wave-shake { 0%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-4px) rotate(-8deg); } 75% { transform: translateX(3px) rotate(6deg); } }
+@keyframes wave-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.anim-wave-alert { display: inline-block; animation: wave-alert 0.45s ease-in-out infinite; }
+.anim-wave-shake { display: inline-block; animation: wave-shake 0.4s ease-in-out infinite; }
+.anim-wave-bob { display: inline-block; animation: wave-bob 0.8s ease-in-out infinite; }
