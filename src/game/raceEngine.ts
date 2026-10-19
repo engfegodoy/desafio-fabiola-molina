@@ -47,14 +47,16 @@ export type EngineEvent =
 
 type Listener = (e: EngineEvent) => void;
 
-/** Treino: tocar para nadar, respirar e manter o ritmo (4 perfeitas seguidas). */
+/** Treino: nadar 20 m, respirar, 5 perfeitas seguidas, nadar mais 20 m e respirar de novo. */
 export const TUTORIAL_STEPS = [
-  { key: 'swim', need: 10 },
+  { key: 'meters', need: 20 },
   { key: 'breath', need: 1 },
-  { key: 'combo', need: 4 },
+  { key: 'combo', need: 5 },
+  { key: 'meters', need: 20 },
+  { key: 'breath', need: 1 },
 ] as const;
-export const TUTORIAL_TOTAL_STROKES = 10;
-export const TUTORIAL_TOTAL_BREATHS = 1;
+export const TUTORIAL_TOTAL_STROKES = 0;
+export const TUTORIAL_TOTAL_BREATHS = 2;
 
 export interface EngineOptions {
   /** Jogando no computador (teclado). Reservado para ajustes por aparelho. */
@@ -96,6 +98,8 @@ export class RaceEngine {
   /** Totais do treino (braçadas e respirações válidas). */
   tutorialStrokes = 0;
   tutorialBreaths = 0;
+  /** Metros nadados na etapa atual do treino. */
+  tutorialMeters = 0;
   /** Ritmo da fase (janela do PERFEITO etc.). */
   rhythm: RhythmConfig;
   /** Último nível de energia avisado (para não repetir alertas). */
@@ -310,7 +314,7 @@ export class RaceEngine {
       }
     }
     if (this.kind === 'tutorial') {
-      this.tutorialTick();
+      this.tutorialTick(dt);
       return;
     }
     if (!p.finished && p.distance >= D) {
@@ -430,9 +434,8 @@ export class RaceEngine {
     if (this.tutorialDone) return;
     this.tutorialStrokes++;
     const step = TUTORIAL_STEPS[this.tutorialStep];
-    if (step.key === 'swim') this.tutorialCount++;
     // Ritmo: conta braçadas PERFEITAS seguidas nesta etapa (errou o ritmo, recomeça).
-    else if (step.key === 'combo') this.tutorialCount = r.quality === 'perfect' ? this.tutorialCount + 1 : 0;
+    if (step.key === 'combo') this.tutorialCount = r.quality === 'perfect' ? this.tutorialCount + 1 : 0;
     else return;
     if (this.tutorialCount >= step.need) this.advanceTutorial();
   }
@@ -446,14 +449,22 @@ export class RaceEngine {
     if (this.tutorialCount >= step.need) this.advanceTutorial();
   }
 
-  private tutorialTick() {
+  private tutorialTick(dt: number) {
     // A piscina de treino é longa; se alguém nadar demais, volta discretamente.
     if (this.player.distance > 135) this.player.distance -= 100;
+    if (this.tutorialDone) return;
+    const step = TUTORIAL_STEPS[this.tutorialStep];
+    if (step.key === 'meters') {
+      this.tutorialMeters += this.player.speed * dt;
+      this.tutorialCount = Math.floor(this.tutorialMeters);
+      if (this.tutorialCount >= step.need) this.advanceTutorial();
+    }
   }
 
   private advanceTutorial() {
     this.tutorialStep++;
     this.tutorialCount = 0;
+    this.tutorialMeters = 0;
     if (this.tutorialStep >= TUTORIAL_STEPS.length) {
       this.tutorialDone = true;
       this.emit({ type: 'tutorialComplete' });

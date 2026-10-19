@@ -58,14 +58,14 @@ export const QUALITY = {
  * Fôlego de 0 a 100%.
  * A energia NÃO se recupera sozinha: só a ação RESPIRAR devolve fôlego.
  * O fôlego cai conforme a distância nadada (não importa o ritmo ou o combo):
- * o ideal é respirar a cada ~30 m, quando ele chega em 75% — respirar devolve 25%.
+ * o ideal é respirar a cada ~18 m (2 vezes na piscina de 50 m), quando ele chega em 75% — respirar devolve 25%.
  * Abaixo de 75% a barra fica laranja e a nadadora vai perdendo velocidade aos poucos;
  * com 20% ou menos fica vermelha e pisca; em 0% se afoga.
  */
 export const ENERGY = {
   max: 100,
   /** Ideal: respirar a cada X metros. */
-  breathEveryMeters: 30,
+  breathEveryMeters: 18,
   /** Quanto uma respiração devolve (limitado a max). Respirar a mais não tem penalidade. */
   breathGain: 25,
   /** Duração da respiração (s): a cabeça vira e os toques nesse instante não contam. */
@@ -230,7 +230,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     opponent: {
       name: 'FABIOLA MOLINA',
       power: 1.02,
-      tapInterval: 0.23,
+      tapInterval: 0.225,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
@@ -267,7 +267,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     opponent: {
       name: 'FABIOLA MOLINA',
       power: 1.03,
-      tapInterval: 0.2275,
+      tapInterval: 0.223,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,
@@ -304,7 +304,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     opponent: {
       name: 'FABIOLA MOLINA',
       power: 0.97,
-      tapInterval: 0.2125,
+      tapInterval: 0.21,
       tapJitter: 0.02,
       breatheBelow: 75,
       breathDelay: 0.08,

@@ -44,11 +44,13 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
     return () => clearTimeout(id);
   }, [done, startPhase]);
 
-  // Etapas curtas: 10 braçadas → respirar → mais 10 braçadas.
+  // Etapas: nadar 20 m → respirar → 5 perfeitas seguidas → nadar mais 20 m → respirar.
   const STEPS = [
-    { icon: '🏊', title: 'TOQUE PARA DAR UMA BRAÇADA', text: `${how.swim}: cada toque = 1 braçada` },
+    { icon: '🏊', title: 'TOQUE PARA NADAR', text: `${how.swim}: nade 20 metros` },
     { icon: '🫁', title: 'RESPIRE', text: `${how.breathe} (+${ENERGY.breathGain}% de fôlego)` },
-    { icon: '🔥', title: 'TOQUE RÁPIDO = PERFEITO', text: '5 toques por segundo: 4 PERFEITAS seguidas' },
+    { icon: '🔥', title: 'TOQUE RÁPIDO = PERFEITO', text: '5 toques por segundo: 5 PERFEITAS seguidas' },
+    { icon: '🏊', title: 'CONTINUE NADANDO', text: 'mais 20 metros, de olho no fôlego' },
+    { icon: '🫁', title: 'RESPIRE DE NOVO', text: `a cada ~${ENERGY.breathEveryMeters} m: ${how.breathe}` },
   ];
 
   const step = Math.min(engine.tutorialStep, STEPS.length - 1);
@@ -73,7 +75,7 @@ export function TutorialScreen({ engine }: { engine: RaceEngine }) {
                 <div className="truncate text-xs font-bold text-navy-700">{info.text}</div>
               </div>
               <div className="font-display shrink-0 rounded-xl bg-sky-100 px-2 py-1 text-center text-sm text-navy-800">
-                {isBreath ? '🫁' : cfg.key === 'combo' ? '🔥' : '🏊'} {engine.tutorialCount}/{cfg.need}
+                {isBreath ? '🫁' : cfg.key === 'combo' ? '🔥' : '🏊'} {engine.tutorialCount}/{cfg.need}{cfg.key === 'meters' ? ' m' : ''}
               </div>
             </div>
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-sky-100">

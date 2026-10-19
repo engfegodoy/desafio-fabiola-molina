@@ -20,7 +20,7 @@ Depois abra `http://localhost:5173`. No Replit, o botão **Run** já executa `np
 
 ## Fluxo
 
-Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dicas → Controles → Treino (tocar para nadar, respirar, manter o ritmo; com "Pular tutorial") → 4 fases → Prêmio.
+Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dicas → Controles → Treino (nadar 20 m, respirar, 5 perfeitas seguidas, mais 20 m e respirar de novo; com "Pular tutorial") → 4 fases → Prêmio.
 
 ## Controles
 
@@ -31,7 +31,7 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
 
 ## Fôlego e respiração
 
-- O fôlego vai de **0 a 100%** e cai conforme a distância nadada (igual para qualquer ritmo ou combo). O ideal é **respirar a cada ~30 m**: respirar devolve **25%**.
+- O fôlego vai de **0 a 100%** e cai conforme a distância nadada (igual para qualquer ritmo ou combo). O ideal é **respirar a cada ~18 m** (2 vezes na piscina de 50 m e mais vezes nas provas longas): respirar devolve **25%**.
 - Abaixo de **75%** a barra fica laranja e a nadadora perde velocidade aos poucos; com **20% ou menos** fica vermelha e pisca, as bordas da tela escurecem e o coração acelera.
 - Se o fôlego **zerar**: "Oh não! Você se afogou!" e o jogo recomeça do zero (no treino, recomeça o treino).
 - **Deslize:** a cada 5 braçadas perfeitas seguidas, as 3 próximas deslizam mais longe.
