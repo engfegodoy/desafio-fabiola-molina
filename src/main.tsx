@@ -25,11 +25,11 @@ const fontsReady = Promise.race([
   new Promise((r) => setTimeout(r, 1500)),
 ]);
 
-// Atalho de teste: ?fase=1..4 abre direto a fase (ex.: ?fase=3 = mar à noite).
+// Atalho de teste: ?fase=1..3 abre direto a fase (ex.: ?fase=3 = mar à noite).
 // Opcional: &nome=Marina. Sem nome, usa "Jogador".
 const params = new URLSearchParams(location.search);
 const fase = Number(params.get('fase'));
-if (fase >= 1 && fase <= 4) {
+if (fase >= 1 && fase <= 3) {
   const g = useGame.getState();
   g.setName(params.get('nome') || g.playerName || 'Jogador');
   g.startPhase(fase as PhaseId);

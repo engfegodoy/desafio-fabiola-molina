@@ -82,14 +82,13 @@ export function FinalScreen() {
   const toMenu = useGame((s) => s.toMenu);
   const coupon = useMemo(() => computeCoupon(results), [results]);
   const wins = fabiolaWins(results);
-  const escaped = !!results[4]?.won;
 
   useEffect(() => {
     const id = setTimeout(() => audio.award(), 300);
     return () => clearTimeout(id);
   }, []);
 
-  const names: Record<PhaseId, string> = { 1: 'Piscina Olímpica', 2: 'Mares: Dia', 3: 'Mares: Noite', 4: 'Fuga do Tubarão' };
+  const names: Record<PhaseId, string> = { 1: 'Piscina Olímpica', 2: 'Mares: Dia', 3: 'Mares: Noite' };
 
   return (
     <div className="safe-pad absolute inset-0 z-20 overflow-y-auto" style={{ touchAction: 'pan-y' }}>
@@ -105,16 +104,16 @@ export function FinalScreen() {
           <p className="mt-1 text-sm font-bold text-navy-700">{coupon.message}</p>
 
           <div className="mt-3 flex justify-center gap-2">
-            {([1, 2, 3, 4] as PhaseId[]).map((p, i) => (
+            {([1, 2, 3] as PhaseId[]).map((p, i) => (
               <div key={p} style={{ animationDelay: `${0.2 + i * 0.15}s` }} className="anim-medal">
                 <Medal phase={p} won={!!results[p]?.won} played={!!results[p]} size={54} />
               </div>
             ))}
           </div>
-          <div className="font-display mt-2 text-sm text-sky-700">{totalMedals(results)} de 4 medalhas conquistadas</div>
+          <div className="font-display mt-2 text-sm text-sky-700">{totalMedals(results)} de 3 medalhas conquistadas</div>
 
           <div className="mt-3 space-y-1.5 text-left">
-            {([1, 2, 3, 4] as PhaseId[]).map((p) => {
+            {([1, 2, 3] as PhaseId[]).map((p) => {
               const r = results[p];
               return (
                 <div key={p} className="flex items-center justify-between rounded-xl bg-sky-50 px-3 py-1.5 text-sm">
@@ -122,22 +121,16 @@ export function FinalScreen() {
                     {MEDAL_STYLE[p].icon} {names[p]}
                   </span>
                   <span className={`font-display ${r?.won ? 'text-emerald-600' : 'text-coral-500'}`}>
-                    {!r ? 'NÃO JOGADA' : p === 4 ? (r.won ? 'ESCAPOU!' : 'PEGO!') : r.won ? 'VITÓRIA' : 'DERROTA'}
+                    {!r ? 'NÃO JOGADA' : r.won ? 'VITÓRIA' : 'DERROTA'}
                     {r && <span className="ml-1 text-xs text-sky-600">{formatTime(r.playerTime)}</span>}
                   </span>
                 </div>
               );
             })}
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-navy-800 p-2 text-white">
-              <div className="text-[10px] font-bold uppercase text-sky-200">Vitórias contra a Fabiola</div>
-              <div className="font-display text-3xl text-sun-400">{wins}/3</div>
-            </div>
-            <div className="rounded-2xl bg-navy-800 p-2 text-white">
-              <div className="text-[10px] font-bold uppercase text-sky-200">Fuga do tubarão</div>
-              <div className={`font-display text-2xl ${escaped ? 'text-emerald-300' : 'text-coral-400'}`}>{escaped ? 'ESCAPOU 🏖️' : 'VIROU LANCHE 🦈'}</div>
-            </div>
+          <div className="mt-3 rounded-2xl bg-navy-800 p-2 text-white">
+            <div className="text-[10px] font-bold uppercase text-sky-200">Vitórias contra a Fabiola</div>
+            <div className="font-display text-3xl text-sun-400">{wins}/3</div>
           </div>
         </div>
 

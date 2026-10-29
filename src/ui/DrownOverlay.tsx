@@ -9,9 +9,7 @@ const RESTART_IN = 4;
 
 /** "Oh não! Você se afogou!" — a energia zerou e o jogo recomeça do zero. */
 export function DrownOverlay({ engine }: { engine: RaceEngine }) {
-  const screen = useGame((s) => s.screen);
   const playAgain = useGame((s) => s.playAgain);
-  const startTutorial = useGame((s) => s.startTutorial);
   const [show, setShow] = useState(false);
   const [left, setLeft] = useState(RESTART_IN);
 
@@ -24,9 +22,8 @@ export function DrownOverlay({ engine }: { engine: RaceEngine }) {
   });
 
   const restart = () => {
-    // No treino, recomeça o treino; nas provas, recomeça o jogo do zero (Fase 1, sem pontos).
-    if (screen === 'tutorial') startTutorial();
-    else playAgain();
+    // Recomeça o jogo do zero (Fase 1, sem pontos).
+    playAgain();
   };
 
   useEffect(() => {
@@ -51,7 +48,7 @@ export function DrownOverlay({ engine }: { engine: RaceEngine }) {
           O fôlego acabou. Lembre de <span className="text-sky-600">respirar a cada ~{engine.cfg.breathEveryMeters} m</span>!
         </p>
         <p className="mt-2 text-xs font-bold text-sky-700">
-          {screen === 'tutorial' ? 'O treino' : 'O jogo'} recomeça do zero em {left}s…
+          O jogo recomeça do zero em {left}s…
         </p>
         <Button big className="mt-3 w-full" onClick={restart}>
           ↻ RECOMEÇAR DO ZERO

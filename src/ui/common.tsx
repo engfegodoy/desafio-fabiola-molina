@@ -81,7 +81,7 @@ export function PauseButton() {
   return (
     <button
       type="button"
-      className="icon-btn"
+      className="font-display flex h-9 items-center rounded-full border-2 border-white/80 bg-white/90 px-3 text-xs text-navy-800 shadow sm:h-10 sm:text-sm"
       aria-label="Pausar"
       title="Pausar (P)"
       onPointerDown={(e) => e.stopPropagation()}
@@ -90,7 +90,7 @@ export function PauseButton() {
         setPaused(true);
       }}
     >
-      <span className="font-display text-lg">II</span>
+      PAUSA
     </button>
   );
 }
@@ -99,7 +99,6 @@ const MEDAL_STYLE: Record<PhaseId, { color: string; icon: string; name: string }
   1: { color: 'linear-gradient(180deg,#7cc8ff,#1f6fe5)', icon: '🏊', name: 'Piscina Olímpica' },
   2: { color: 'linear-gradient(180deg,#7ff0e6,#14b8a6)', icon: '☀️', name: 'Mares: Dia' },
   3: { color: 'linear-gradient(180deg,#c9a7ff,#7c3aed)', icon: '🌙', name: 'Mares: Noite' },
-  4: { color: 'linear-gradient(180deg,#ff9a8a,#ff5d4d)', icon: '🦈', name: 'Fuga do Tubarão' },
 };
 
 export function Medal({ phase, won, played, size = 40, animate = false }: { phase: PhaseId; won: boolean; played: boolean; size?: number; animate?: boolean }) {
@@ -135,7 +134,7 @@ export function MedalRow({ size = 36, animate = false }: { size?: number; animat
   const results = useGame((s) => s.results);
   return (
     <div className="flex gap-1">
-      {([1, 2, 3, 4] as PhaseId[]).map((p) => (
+      {([1, 2, 3] as PhaseId[]).map((p) => (
         <Medal key={p} phase={p} won={!!results[p]?.won} played={!!results[p]} size={size} animate={animate} />
       ))}
     </div>

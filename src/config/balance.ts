@@ -9,7 +9,7 @@
  *  diferentes habilidades e conferir se as provas continuam vencíveis.
  */
 
-export type PhaseId = 1 | 2 | 3 | 4;
+export type PhaseId = 1 | 2 | 3;
 export type StageKind = 'tutorial' | 'pool' | 'seaDay' | 'seaNight' | 'shark';
 
 /**
@@ -165,7 +165,7 @@ export interface OpponentConfig {
 
 export interface StageConfig {
   id: StageKind;
-  phase: PhaseId | 0;
+  phase: PhaseId | 0 | 4;
   title: string;
   subtitle: string;
   distance: number;
@@ -387,7 +387,6 @@ export const PHASE_STAGE: Record<PhaseId, StageKind> = {
   1: 'pool',
   2: 'seaDay',
   3: 'seaNight',
-  4: 'shark',
 };
 
 /** Posições laterais (x) das raias. */

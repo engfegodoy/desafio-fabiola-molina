@@ -3,7 +3,7 @@ import { ACTION_LABEL, bindingLabel, expandCode, validateKey, type Action } from
 import { isTouch, useGame, type MobileScheme } from '../store/gameStore';
 import { audio } from '../audio/audio';
 
-/** Configuração de teclas (computador) e esquema de toque (celular). Usado antes do treino e na pausa. */
+/** Configuração de teclas (computador) e esquema de toque (celular). Usado antes da primeira fase e na pausa. */
 export function ControlsPanel({ showBoth = false }: { showBoth?: boolean }) {
   return (
     <div className="flex flex-col gap-3 sm:gap-4">

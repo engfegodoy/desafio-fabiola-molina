@@ -5,7 +5,7 @@ import { isTouch, useGame } from '../store/gameStore';
 import { bindingLabel } from '../game/keybindings';
 import { BreathButton, SwimButton } from './Controls';
 import { ENERGY, SWIM } from '../config/balance';
-import { AudioButton, MedalRow, PauseButton } from './common';
+import { AudioButton, PauseButton } from './common';
 
 /* ===================== Barra de ritmo (velocidade) ===================== */
 /** Velocidade que enche a barra até o fim (≈ ritmo ideal com combo). */
@@ -255,9 +255,7 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
   const scheme = useGame((s) => s.mobileScheme);
   const bindings = useGame((s) => s.bindings);
   const buttons = isTouch && scheme === 'buttons';
-  const phase = useGame((s) => s.phase);
   const p = engine.player;
-  const D = engine.cfg.distance;
   const isShark = engine.kind === 'shark';
   const showRace = engine.state !== 'intro';
   const w = engine.warning;
@@ -271,30 +269,12 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
             <span className="text-lg">{gender === 'm' ? '🏊‍♂️' : '🏊‍♀️'}</span>
             <span className="font-display truncate text-sm text-sun-300 sm:text-lg">{name}</span>
           </div>
-          {engine.opponent && showRace && (
-            <div className="hud-card w-fit px-3 py-1">
-              <div className="font-display text-[10px] uppercase text-white/80">Posição</div>
-              <div className={`font-display text-2xl leading-none ${engine.position === 1 ? 'text-sun-400' : 'text-white'}`}>
-                {engine.position}/2
-              </div>
-            </div>
-          )}
-          {!tutorial && (
-            <div className="font-display w-fit whitespace-nowrap rounded-lg bg-white/90 px-2 py-0.5 text-[10px] uppercase text-navy-800 sm:text-xs">
-              Fase {phase} de 4
-            </div>
-          )}
         </div>
 
         <div className="flex flex-col items-center gap-1.5">
           {!tutorial && (
             <div className="hud-card px-2.5 py-1 sm:px-4">
               <div className="font-display text-xl tabular-nums sm:text-3xl">{formatTime(engine.time)}</div>
-            </div>
-          )}
-          {!isShark && !tutorial && showRace && (
-            <div className="font-display rounded-full bg-navy-800/70 px-3 py-0.5 text-xs text-white">
-              {Math.max(0, D - p.distance).toFixed(0)} m para a chegada
             </div>
           )}
           {isTouch && scheme === 'gesture' && (
@@ -309,11 +289,6 @@ export function HUD({ engine, tutorial = false, energyHighlight = false }: { eng
             <AudioButton />
             <PauseButton />
           </div>
-          {!tutorial && (
-            <div className="hud-card px-1.5 py-1 sm:px-2 sm:py-1.5">
-              <MedalRow size={typeof window !== 'undefined' && window.innerWidth < 420 ? 20 : 26} />
-            </div>
-          )}
         </div>
       </div>
 

@@ -11,7 +11,6 @@ import { FinalScene, MenuScene } from './three/scenes/MenuScene';
 import { MenuScreen } from './ui/MenuScreen';
 import { ControlsScreen, RulesScreen } from './ui/PreGameScreens';
 import { RaceScreen } from './ui/RaceScreen';
-import { TutorialScreen } from './ui/TutorialScreen';
 import { FinalScreen } from './ui/FinalScreen';
 import { GameAudio } from './ui/GameAudio';
 
@@ -48,7 +47,6 @@ export default function App() {
 
   const engine = useMemo(() => {
     const opts = { desktop: !isTouch };
-    if (screen === 'tutorial') return new RaceEngine('tutorial', undefined, opts);
     if (screen === 'race') return new RaceEngine(PHASE_STAGE[phase], undefined, opts);
     return null;
     // runId força uma nova prova ao repetir a fase
@@ -91,7 +89,6 @@ export default function App() {
         {screen === 'menu' && <MenuScreen />}
         {screen === 'rules' && <RulesScreen />}
         {screen === 'controls' && <ControlsScreen />}
-        {screen === 'tutorial' && engine && <TutorialScreen key={runId} engine={engine} />}
         {screen === 'race' && engine && <RaceScreen key={runId} engine={engine} />}
         {screen === 'final' && <FinalScreen />}
       </div>

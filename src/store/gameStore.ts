@@ -4,8 +4,8 @@ import type { PhaseResult } from '../game/raceEngine';
 import { DEFAULT_BINDINGS, loadBindings, saveBindings, type Action, type Bindings } from '../game/keybindings';
 import { audio } from '../audio/audio';
 
-/** Fluxo: identificação → regras → controles → treino → provas → prêmio. */
-export type Screen = 'menu' | 'rules' | 'controls' | 'tutorial' | 'race' | 'final';
+/** Fluxo: identificação → regras → controles → provas (3 fases) → prêmio. */
+export type Screen = 'menu' | 'rules' | 'controls' | 'race' | 'final';
 export type Quality = 'high' | 'low';
 export type Gender = 'f' | 'm';
 export type MobileScheme = 'buttons' | 'gesture';
@@ -43,8 +43,7 @@ interface GameState {
   setSuitColor: (c: SuitColorId) => void;
   startGame: () => void;
   goTo: (s: Screen) => void;
-  startTutorial: () => void;
-  skipTutorial: () => void;
+  startRace: () => void;
   startPhase: (p: PhaseId) => void;
   retryPhase: () => void;
   nextPhase: () => void;
@@ -101,13 +100,12 @@ export const useGame = create<GameState>((set, get) => ({
     set({ screen: 'rules', results: {}, phase: 1, paused: false });
   },
   goTo: (s) => set({ screen: s, paused: false }),
-  startTutorial: () => set({ screen: 'tutorial', results: {}, phase: 1, paused: false, runId: get().runId + 1 }),
-  skipTutorial: () => get().startPhase(1),
+  startRace: () => set({ screen: 'race', results: {}, phase: 1, paused: false, runId: get().runId + 1 }),
   startPhase: (p) => set({ screen: 'race', phase: p, paused: false, runId: get().runId + 1 }),
   retryPhase: () => set({ paused: false, runId: get().runId + 1 }),
   nextPhase: () => {
     const p = get().phase;
-    if (p >= 4) get().goFinal();
+    if (p >= 3) get().goFinal();
     else get().startPhase((p + 1) as PhaseId);
   },
   // Repetir uma fase substitui o resultado anterior — nunca duplica pontos.
@@ -148,7 +146,7 @@ export function fabiolaWins(results: GameState['results']) {
 }
 
 export function totalMedals(results: GameState['results']) {
-  return ([1, 2, 3, 4] as PhaseId[]).filter((p) => results[p]?.won).length;
+  return ([1, 2, 3] as PhaseId[]).filter((p) => results[p]?.won).length;
 }
 
 export function suitHex(id: SuitColorId) {

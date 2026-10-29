@@ -57,7 +57,7 @@ export function RulesScreen() {
 /** TELA 3 — Configuração dos controles. */
 export function ControlsScreen() {
   const goTo = useGame((s) => s.goTo);
-  const startTutorial = useGame((s) => s.startTutorial);
+  const startRace = useGame((s) => s.startRace);
   return (
     <Shell step="PASSO 3 DE 3 • CONTROLES">
       <div className="font-display text-stroke mb-2 text-center text-3xl text-sun-400 sm:mb-3 sm:text-5xl">SEUS CONTROLES</div>
@@ -67,8 +67,8 @@ export function ControlsScreen() {
         <Button color="white" className="shrink-0 !px-3 sm:w-40" onClick={() => goTo('rules')}>
           ◀ Voltar
         </Button>
-        <Button className="flex-1 !px-2 sm:!px-8 sm:!py-4 sm:!text-2xl" onClick={startTutorial}>
-          INICIAR TREINAMENTO 🏊
+        <Button className="flex-1 !px-2 sm:!px-8 sm:!py-4 sm:!text-2xl" onClick={startRace}>
+          COMEÇAR 🏊
         </Button>
       </div>
     </Shell>
