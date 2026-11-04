@@ -58,3 +58,34 @@ export async function saveLead(lead: Lead): Promise<void> {
   if (res.ok || res.status === 409) return;
   throw new Error('Não foi possível salvar seu cadastro. Tente de novo.');
 }
+
+export interface CouponWon {
+  email: string;
+  coupon: string;
+  wins: number;
+}
+
+/** Registra o cupom ganho no fim do jogo (tabela `lead_coupons`). Não bloqueia o jogo: falhas só vão para o console. */
+export async function saveCoupon(c: CouponWon): Promise<boolean> {
+  if (!leadsConfigured) {
+    if (import.meta.env.DEV) console.warn('[leads] Supabase não configurado: cupom não salvo.', c);
+    return false;
+  }
+  try {
+    const res = await fetch(`${URL!.replace(/\/$/, '')}/rest/v1/lead_coupons`, {
+      method: 'POST',
+      headers: {
+        apikey: KEY!,
+        Authorization: `Bearer ${KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ email: normalizeEmail(c.email), coupon: c.coupon, wins: c.wins }),
+    });
+    if (!res.ok) console.warn('[leads] cupom não salvo:', res.status);
+    return res.ok;
+  } catch {
+    console.warn('[leads] cupom não salvo: sem conexão');
+    return false;
+  }
+}

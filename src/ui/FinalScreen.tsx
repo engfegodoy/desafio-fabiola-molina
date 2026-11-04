@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { PhaseId } from '../config/balance';
 import { computeCoupon, type Coupon } from '../game/coupons';
+import { saveCoupon } from '../game/leads';
 import { formatTime } from '../game/engineContext';
 import { fabiolaWins, totalMedals, useGame } from '../store/gameStore';
 import { audio } from '../audio/audio';
@@ -75,8 +76,13 @@ export function CouponCard({ coupon }: { coupon: Coupon }) {
   );
 }
 
+/** Último jogo cujo cupom já foi enviado (evita enviar duas vezes o mesmo resultado). */
+let sentFor: object | null = null;
+
 export function FinalScreen() {
   const name = useGame((s) => s.playerName);
+  const email = useGame((s) => s.playerEmail);
+  const leadSaved = useGame((s) => s.leadSaved);
   const results = useGame((s) => s.results);
   const playAgain = useGame((s) => s.playAgain);
   const toMenu = useGame((s) => s.toMenu);
@@ -87,6 +93,13 @@ export function FinalScreen() {
     const id = setTimeout(() => audio.award(), 300);
     return () => clearTimeout(id);
   }, []);
+
+  // Salva no Supabase o cupom ganho, junto do e-mail do lead (uma vez por jogo).
+  useEffect(() => {
+    if (!leadSaved || !email || sentFor === results) return;
+    sentFor = results;
+    void saveCoupon({ email, coupon: coupon.code, wins });
+  }, [leadSaved, email, results, coupon.code, wins]);
 
   const names: Record<PhaseId, string> = { 1: 'Piscina Olímpica', 2: 'Mares: Dia', 3: 'Mares: Noite' };
 
