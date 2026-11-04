@@ -2,7 +2,17 @@
 
 Jogo de natação que gera cupons para o e-commerce Fabiola Molina.
 
-Jogo 3D de natação para navegador (desktop e celular), feito com React + TypeScript + Vite, Three.js / React Three Fiber / Drei, Tailwind CSS, Zustand e Web Audio API. Não tem backend nem banco de dados: o nome, a pontuação e o progresso ficam só na memória do jogo.
+Jogo 3D de natação para navegador (desktop e celular), feito com React + TypeScript + Vite, Three.js / React Three Fiber / Drei, Tailwind CSS, Zustand e Web Audio API. Antes de jogar, o jogador informa **nome e e-mail** (lead), que são salvos no **Supabase**. A pontuação e o progresso ficam só na memória do jogo.
+
+## Cadastro de leads (Supabase)
+
+1. No Supabase, abra **SQL Editor**, cole o conteúdo de [`supabase/leads.sql`](supabase/leads.sql) e clique em **Run**. Isso cria a tabela `leads`, com um cadastro por e-mail. O site só consegue **inserir**: ninguém lê os leads pelo site.
+2. Em **Project Settings → API**, copie a **Project URL** e a chave **anon public**.
+3. **No computador:** copie `.env.example` para `.env.local` e preencha os dois valores.
+4. **No site (GitHub Pages):** no GitHub, vá em **Settings → Secrets and variables → Actions → New repository secret** e crie `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. Depois publique de novo (push ou **Actions → Publicar no GitHub Pages → Run workflow**).
+5. Os leads aparecem no Supabase em **Table Editor → leads**.
+
+Sem essa configuração, o site mostra "Cadastro indisponível" e não deixa jogar. Em desenvolvimento (`npm run dev`), o jogo continua e só avisa no console.
 
 ## Como rodar
 

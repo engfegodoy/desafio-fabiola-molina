@@ -27,6 +27,9 @@ interface GameState {
   /** Incrementa para reiniciar a fase atual (remonta a cena). */
   runId: number;
   playerName: string;
+  playerEmail: string;
+  /** Lead salvo nesta sessão (não pede de novo ao voltar ao menu). */
+  leadSaved: boolean;
   gender: Gender;
   suitColor: SuitColorId;
   audioOn: boolean;
@@ -39,6 +42,8 @@ interface GameState {
   remapping: boolean;
 
   setName: (name: string) => void;
+  setEmail: (email: string) => void;
+  setLeadSaved: (v: boolean) => void;
   setGender: (g: Gender) => void;
   setSuitColor: (c: SuitColorId) => void;
   startGame: () => void;
@@ -82,6 +87,8 @@ export const useGame = create<GameState>((set, get) => ({
   phase: 1,
   runId: 0,
   playerName: '',
+  playerEmail: '',
+  leadSaved: false,
   gender: 'f',
   suitColor: 'azul',
   audioOn: true,
@@ -92,7 +99,9 @@ export const useGame = create<GameState>((set, get) => ({
   mobileScheme: loadScheme(),
   remapping: false,
 
-  setName: (name) => set({ playerName: name.slice(0, MAX_NAME) }),
+  setName: (name) => set({ playerName: name.slice(0, MAX_NAME), leadSaved: false }),
+  setEmail: (email) => set({ playerEmail: email.slice(0, 254), leadSaved: false }),
+  setLeadSaved: (v) => set({ leadSaved: v }),
   setGender: (g) => set({ gender: g }),
   setSuitColor: (c) => set({ suitColor: c }),
   startGame: () => {

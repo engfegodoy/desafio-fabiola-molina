@@ -4,3 +4,5 @@ scripts/.sim.cjs
 *.tsbuildinfo
 scripts/.coupon.cjs
 .claude/
+.env.local
+.env

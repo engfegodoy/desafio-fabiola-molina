@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { MAX_NAME, SUIT_COLORS, useGame, type Gender } from '../store/gameStore';
 import { audio } from '../audio/audio';
+import { isValidEmail, saveLead } from '../game/leads';
 import { AudioButton, Button, CssBubbles, Logo } from './common';
 
 /** TELA 1 — Identificação: nome, personagem (mulher/homem) e cor do traje. */
@@ -10,14 +12,43 @@ export function MenuScreen() {
   const setGender = useGame((s) => s.setGender);
   const suitColor = useGame((s) => s.suitColor);
   const setSuitColor = useGame((s) => s.setSuitColor);
+  const email = useGame((s) => s.playerEmail);
+  const setEmail = useGame((s) => s.setEmail);
+  const leadSaved = useGame((s) => s.leadSaved);
+  const setLeadSaved = useGame((s) => s.setLeadSaved);
   const start = useGame((s) => s.startGame);
-  const valid = name.trim().length > 0;
+  const [consent, setConsent] = useState(leadSaved);
+  const [touched, setTouched] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const nameOk = name.trim().length > 0;
+  const emailOk = isValidEmail(email);
+  const valid = nameOk && emailOk && consent;
 
-  const go = () => {
-    if (!valid) return;
+  const go = async () => {
+    setTouched(true);
+    if (!valid || sending) return;
     audio.unlock();
-    start();
+    if (leadSaved) return start();
+    setSending(true);
+    setError(null);
+    try {
+      await saveLead({ name, email, consent });
+      setLeadSaved(true);
+      start();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSending(false);
+    }
   };
+  const hint = !nameOk
+    ? 'Digite seu nome para continuar.'
+    : !emailOk
+      ? 'Digite um e-mail válido para continuar.'
+      : !consent
+        ? 'Marque a autorização para continuar.'
+        : null;
 
   const genders: { id: Gender; label: string; icon: string; sub: string }[] = [
     { id: 'f', label: 'MULHER', icon: '🏊‍♀️', sub: 'de maiô' },
@@ -54,7 +85,7 @@ export function MenuScreen() {
                 placeholder="Digite seu nome"
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') go();
+                  if (e.key === 'Enter') void go();
                 }}
                 className="w-full rounded-2xl border-[3px] border-sky-200 bg-white py-2.5 pl-12 pr-16 text-lg font-bold text-navy-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-200"
               />
@@ -62,6 +93,51 @@ export function MenuScreen() {
                 {name.length}/{MAX_NAME}
               </span>
             </div>
+
+            <label htmlFor="player-email" className="font-display mb-1 mt-3 block text-base text-navy-700">
+              E-mail
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl">✉️</span>
+              <input
+                id="player-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={254}
+                value={email}
+                placeholder="seuemail@exemplo.com"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
+                onBlur={() => email && setTouched(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void go();
+                }}
+                aria-invalid={touched && !emailOk}
+                className={`w-full rounded-2xl border-[3px] bg-white py-2.5 pl-12 pr-4 text-lg font-bold text-navy-800 outline-none transition focus:ring-4 ${
+                  touched && email && !emailOk ? 'border-coral-400 focus:ring-coral-400/30' : 'border-sky-200 focus:border-sky-400 focus:ring-sky-200'
+                }`}
+              />
+            </div>
+            {touched && email && !emailOk && <p className="mt-1 text-xs font-bold text-coral-500">Esse e-mail não parece válido.</p>}
+            <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs font-bold leading-snug text-navy-700">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => {
+                  setConsent(e.target.checked);
+                  if (!e.target.checked) setLeadSaved(false);
+                }}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-sky-600"
+              />
+              <span>
+                Autorizo a Fabiola Molina a guardar meu nome e e-mail e a me enviar novidades e ofertas. Menor de idade? Use o e-mail do responsável.
+              </span>
+            </label>
 
             <div className="font-display mb-1 mt-3 text-base text-navy-700">Personagem</div>
             <div className="grid grid-cols-2 gap-2">
@@ -110,10 +186,11 @@ export function MenuScreen() {
             </div>
             <p className="mt-1 text-xs font-bold text-sky-700">A prévia em 3D muda na hora. 👉</p>
 
-            <Button big className="anim-glow mt-3 w-full" disabled={!valid} onClick={go}>
-              CONTINUAR ▶
+            <Button big className="anim-glow mt-3 w-full" disabled={!valid || sending} onClick={() => void go()}>
+              {sending ? 'SALVANDO…' : 'CONTINUAR ▶'}
             </Button>
-            {!valid && <p className="mt-2 text-center text-sm font-bold text-sky-700">Digite seu nome para continuar.</p>}
+            {error && <p className="mt-2 text-center text-sm font-bold text-coral-500">{error}</p>}
+            {!error && hint && <p className="mt-2 text-center text-sm font-bold text-sky-700">{hint}</p>}
           </div>
         </div>
       </div>
