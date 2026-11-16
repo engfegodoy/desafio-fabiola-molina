@@ -67,4 +67,4 @@ Identificação (nome, personagem homem/mulher e cor do traje) → Regras e dica
 - No mar, cada onda vem de frente e **puxa um pouco para trás** (quem para de tocar recua 1–2 m). Vale para as duas nadadoras.
 - A Fabiola tem uma pequena variação de forma a cada corrida, então a dificuldade sobe de fase em fase sem resultado predeterminado.
 - Repetir uma fase substitui o resultado anterior dela. É possível avançar mesmo perdendo.
-- Cupons: FABIOLA20 (3 vitórias), FABIOLA15 (2 vitórias), FABIOLA10 (1 vitória), FABIOLA5 (nenhuma vitória). Os códigos são demonstrativos.
+- Cupons: NADADOR20 (3 vitórias), FABIOLA15 (2 vitórias), JOGOFM10 (1 vitória), FAB05 (nenhuma vitória). Os códigos são demonstrativos.

@@ -19,7 +19,7 @@ export function computeCoupon(results: Partial<Record<PhaseId, PhaseResult>>): C
   if (wins === 3) {
     return {
       tier: 'legend',
-      code: 'FABIOLA20',
+      code: 'NADADOR20',
       prize: '20% OFF',
       title: 'VOCÊ É UMA LENDA! NÍVEL FABIOLA!',
       message: 'Você venceu a Fabiola nas três provas!',
@@ -37,7 +37,7 @@ export function computeCoupon(results: Partial<Record<PhaseId, PhaseResult>>): C
   if (wins === 1) {
     return {
       tier: 'p10',
-      code: 'FABIOLA10',
+      code: 'JOGOFM10',
       prize: '10% OFF',
       title: 'MANDOU BEM!',
       message: 'Você venceu a Fabiola em uma prova. Continue treinando essas braçadas!',
@@ -45,7 +45,7 @@ export function computeCoupon(results: Partial<Record<PhaseId, PhaseResult>>): C
   }
   return {
     tier: 'p5',
-    code: 'FABIOLA5',
+    code: 'FAB05',
     prize: '5% OFF',
     title: 'VALEU PELO DESAFIO!',
     message: 'Que tal comprar uma peça e começar a treinar melhor? Na próxima, você chega lá!',
