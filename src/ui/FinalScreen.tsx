@@ -78,9 +78,33 @@ export function CouponCard({ coupon, onPlayAgain }: { coupon: Coupon; onPlayAgai
           </div>
         )}
       </div>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        {STORES.map((s) => (
+          <a
+            key={s.href}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-coral !flex-col !gap-0 !px-2 !py-1.5 text-center leading-tight sm:!py-2"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              audio.unlock();
+              audio.click();
+            }}
+          >
+            <span className="text-[10px] normal-case sm:text-xs">Comprar no site</span>
+            <span className="whitespace-nowrap text-sm sm:text-base">🛒 {s.label}</span>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
+
+const STORES = [
+  { label: 'Moda Esportiva', href: 'https://fabiolamolina.com.br/' },
+  { label: 'Moda Casual', href: 'https://www.fabiolamolina.com.br/loja/casual' },
+];
 
 /** Último jogo cujo cupom já foi enviado (evita enviar duas vezes o mesmo resultado). */
 let sentFor: object | null = null;
