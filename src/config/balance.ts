@@ -249,7 +249,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     playerPower: 1,
     opponent: {
       name: 'FABIOLA MOLINA',
-      power: 0.975,
+      power: 0.995,
       tapInterval: 0.207,
       tapJitter: 0.02,
       breatheBelow: 75,
