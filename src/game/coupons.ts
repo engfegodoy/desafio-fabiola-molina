@@ -3,11 +3,11 @@ import type { PhaseResult } from './raceEngine';
 
 export interface Coupon {
   code: string;
-  /** Texto grande do prêmio (ex.: "20% OFF" ou "FRETE GRÁTIS"). */
+  /** Texto grande do prêmio (ex.: "15% OFF" ou "FRETE GRÁTIS"). */
   prize: string;
   title: string;
   message: string;
-  tier: 'legend' | 'freeShipping' | 'p15' | 'p10' | 'p5';
+  tier: 'legend' | 'freeShipping' | 'p10' | 'p5';
 }
 
 /**
@@ -19,17 +19,17 @@ export function computeCoupon(results: Partial<Record<PhaseId, PhaseResult>>): C
   if (wins === 3) {
     return {
       tier: 'legend',
-      code: 'NADADOR20',
-      prize: '20% OFF',
+      code: 'FABIOLA15',
+      prize: '15% OFF',
       title: 'VOCÊ É UMA LENDA! NÍVEL FABIOLA!',
       message: 'Você venceu a Fabiola nas três provas!',
     };
   }
   if (wins === 2) {
     return {
-      tier: 'p15',
-      code: 'FABIOLA15',
-      prize: '15% OFF',
+      tier: 'freeShipping',
+      code: 'FRETEFM',
+      prize: 'FRETE GRÁTIS',
       title: 'QUE NADO INCRÍVEL!',
       message: 'Você venceu a Fabiola em duas provas. Está quase no nível dela!',
     };

@@ -47,8 +47,8 @@ export function CouponCard({ coupon, onPlayAgain }: { coupon: Coupon; onPlayAgai
       <div className="font-display text-stroke-thin mb-1.5 text-center text-base text-white sm:mb-2 sm:text-xl">SEU CUPOM ESPECIAL:</div>
       <div className="ticket shine p-2 sm:p-3">
         <div className="ticket-inner flex flex-col items-center px-3 py-2 sm:px-4 sm:py-3">
-          <div className="font-display flex items-baseline gap-2">
-            <span className="text-stroke-thin text-3xl leading-none text-white sm:text-5xl" style={{ WebkitTextStroke: '0.05em #0b2a6b' }}>
+          <div className={`font-display flex items-baseline gap-2 ${coupon.tier === 'freeShipping' ? 'flex-col !items-center !gap-0.5' : ''}`}>
+            <span className="text-stroke-thin whitespace-nowrap text-3xl leading-none text-white sm:text-5xl" style={{ WebkitTextStroke: '0.05em #0b2a6b' }}>
               {coupon.prize}
             </span>
             <span className="text-xs font-bold uppercase text-navy-700">{coupon.tier === 'freeShipping' ? 'na próxima compra' : 'de desconto'}</span>

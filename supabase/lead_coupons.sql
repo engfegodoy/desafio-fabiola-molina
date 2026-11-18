@@ -5,10 +5,8 @@ create table if not exists public.lead_coupons (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
   email text not null references public.leads (email) on delete cascade,
-  coupon text not null constraint lead_coupons_coupon_check check (coupon in (
-    'NADADOR20', 'FABIOLA15', 'JOGOFM10', 'FAB05',     -- códigos atuais
-    'FABIOLA20', 'FABIOLA10', 'FABIOLA5'               -- códigos antigos (partidas já gravadas)
-  )),
+  -- Só o formato do código (letras maiúsculas e números): os códigos em si ficam no jogo.
+  coupon text not null constraint lead_coupons_coupon_check check (coupon ~ '^[A-Z0-9]{3,20}$'),
   wins smallint not null check (wins between 0 and 3)
 );
 

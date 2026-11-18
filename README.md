@@ -27,7 +27,7 @@ Depois abra `http://localhost:5173`. No Replit, o botão **Run** já executa `np
 - **Abrir direto uma fase (para testes):** `http://localhost:5173/?fase=3` (1 = piscina, 2 = mar de dia, 3 = mar à noite). Opcional: `&nome=Marina`
 - `npm run build`: gera a versão de produção em `dist/`
 - `npm run sim`: simula centenas de provas com robôs de habilidades e estratégias de respiração diferentes, usando o mesmo motor do jogo, para conferir o balanceamento
-- `npm run test`: confere as regras dos cupons nos 8 cenários possíveis
+- `npm run test`: confere as regras dos cupons em 7 cenários
 
 ## Fluxo
 
